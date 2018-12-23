@@ -27,6 +27,6 @@ setup(
     author="LDF",
     author_email="liu.dengfeng@hotmail.com",
     description="Utilities for fetching Chinese stock webpage data",
-    license="MIT",
+    license="https://github.com/liudengfeng/cnswd/blob/master/LICENSE",
     keywords="Chinese stock data tools",
 )
