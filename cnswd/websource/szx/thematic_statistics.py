@@ -87,6 +87,8 @@ class ThematicStatistics(SZXPage):
         super().__init__(clear_cache=clear_cache, retry_times=retry_times, **kwds)
         check_loaded_css = 'a.active'
         self._switch_to(8, check_loaded_css)
+        # 需要再休眠一会，等待页面完全加载
+        time.sleep(0.3)
         self.logger.notice(f'加载主页用时：{time.time() - start:>0.4f}秒')
 
     def _set_date_css_by(self, level):

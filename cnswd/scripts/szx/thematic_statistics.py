@@ -31,13 +31,15 @@ def insert_data():
         s.sort_values(['上市代码', '暂停上市日期'], inplace=True)
         s.drop_duplicates(['上市代码'], 'last', inplace=True)
         s['上市代码'] = s['上市代码'].map(lambda x: str(x).zfill(6))
-        s.to_sql(Suspend.__tablename__, engine, if_exists='append', index=False)
+        s.to_sql(Suspend.__tablename__, engine,
+                 if_exists='append', index=False)
         api.logger.notice(f"添加{Suspend.__tablename__} {len(s)}行")
         d = api.query('12.3')
         d.sort_values(['上市代码', '终止上市日期'], inplace=True)
         d.drop_duplicates(['上市代码'], 'last', inplace=True)
         d['上市代码'] = d['上市代码'].map(lambda x: str(x).zfill(6))
-        d.to_sql(Delisting.__tablename__, engine, if_exists='append', index=False)
+        d.to_sql(Delisting.__tablename__, engine,
+                 if_exists='append', index=False)
         api.logger.notice(f"添加{Delisting.__tablename__} {len(d)}行")
 
 

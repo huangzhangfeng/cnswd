@@ -331,5 +331,6 @@ ASALocalRun/
 
 # vs
 .vscode/
+*.egg-info/
 # tasks
 regular_tasks/
