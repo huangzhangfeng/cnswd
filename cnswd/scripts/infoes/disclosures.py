@@ -1,5 +1,11 @@
 """
-公司公告
+上市公司公告查询
+
+来源：[巨潮资讯网](http://www.cninfo.com.cn/new/commonUrl?url=disclosure/list/notice-sse#)
+
+备注
+    使用实际公告时间
+    如查询公告日期为2018-12-15 实际公告时间为2018-12-14 16：00：00
 """
 
 import asyncio
