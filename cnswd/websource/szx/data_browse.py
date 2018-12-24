@@ -393,7 +393,7 @@ class DataBrowser(SZXPage):
         total_num = len(codes)
         count = 0
         batch_codes = loop_codes(codes, BATCH_CODE_NUM)
-        msg_fmt = '<<   代码进度 {} / {} 批次数据：{}行({} ~ {})'
+        msg_fmt = '<<   代码进度 {} / {} 批次数据：{}行({} - {})'
         for choosed_codes in batch_codes:
             count += len(choosed_codes)
             self._change_code(choosed_codes)

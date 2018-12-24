@@ -149,33 +149,28 @@ def _select_rows_from(level, df, start):
     return df.loc[cond, :]
 
 
-def batch_refresh_stock_data(codes, levels):
+def batch_refresh_stock_data(codes, level, dates):
     """分批刷新股票数据"""
-    if '3.1' in levels:
-        dates = get_quote_start_date()
-    else:
-        dates = None
     engine = get_engine(db_dir_name)
     # 不可混淆api内部尝试次数。内部尝试次数默认为3次
     # 整体尝试次数可以设置很大的数。一旦记录的再次尝试代码为空，即退出循环
     with DataBrowser(True) as api:
         for code in codes:
-            for level in levels:
-                # 使暂停上市、退市股票开始日期无效
-                if level == '3.1':
-                    start = dates.at[code, '开始日期'].date()
-                else:
-                    with session_scope(db_dir_name) as session:
-                        start = get_start_date(session, level, code)
-                if start > pd.Timestamp('today').date():
-                    continue
-                df = api.get_data(level, code, start)
-                # 选择自开始日期起的行
-                df = _select_rows_from(level, df, start)
-                if level == '4.1' and (not df.empty):
-                    # 去掉研究员为空的记录(年份久远的数据可能存在，不影响)
-                    df = df.loc[df['研究员名称'].str.len() > 0, :]
-                write_to_sql(engine, df, level)
+            # 使暂停上市、退市股票开始日期无效
+            if level == '3.1':
+                start = dates.at[code, '开始日期'].date()
+            else:
+                with session_scope(db_dir_name) as session:
+                    start = get_start_date(session, level, code)
+            if start > pd.Timestamp('today').date():
+                continue
+            df = api.get_data(level, code, start)
+            # 选择自开始日期起的行
+            df = _select_rows_from(level, df, start)
+            if level == '4.1' and (not df.empty):
+                # 去掉研究员为空的记录(年份久远的数据可能存在，不影响)
+                df = df.loc[df['研究员名称'].str.len() > 0, :]
+            write_to_sql(engine, df, level)
 
 
 def valid_level(levels):
@@ -201,10 +196,15 @@ def refresh_stock_data(levels, times):
         all_codes = get_all_stock(session)
         # 尽量平衡各cpu负载，提高并行效率
         shuffle(all_codes)
-    kws = {'levels': levels}
-    runner = TryToCompleted(batch_refresh_stock_data,
-                            all_codes, kws, retry_times=times)
-    runner.run()
+    for level in levels:
+        if level == '3.1':
+            dates = get_quote_start_date()
+        else:
+            dates = None
+        kws = {'level': level, 'dates':dates}
+        runner = TryToCompleted(batch_refresh_stock_data,
+                                all_codes, kws, retry_times=times)
+        runner.run()
 
 
 def daily_refresh():
