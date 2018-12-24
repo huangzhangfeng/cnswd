@@ -13,8 +13,14 @@ logger = logbook.Logger('runner')
 
 
 def batch_codes(iterable):
-    """切分可迭代对象，返回长度cpu_count()/2批次列表"""
-    batch_num = math.ceil(len(iterable) / max_worker)
+    """
+    切分可迭代对象，返回长度max_worker*4批次列表
+
+    说明：
+        1. 初始化浏览器很耗时，且占有大量内存
+        2. 切分目标主要是平衡速度与稳定性
+    """
+    batch_num = math.ceil(len(iterable) / max_worker / 4)
     return loop_codes(iterable, batch_num)
 
 
@@ -58,3 +64,5 @@ class TryToCompleted(object):
         if len(retry):
             logger.warn(f'经过{self._retry_times}次尝试，以下尚未完成：{sorted(retry)}')
         logger.notice(f'总用时：{(time.time() - t_start):.2f}秒')
+
+
