@@ -149,8 +149,12 @@ def _select_rows_from(level, df, start):
     return df.loc[cond, :]
 
 
-def batch_refresh_stock_data(codes, level, dates):
+def batch_refresh_stock_data(codes, level):
     """分批刷新股票数据"""
+    if level == '3.1':
+        dates = get_quote_start_date()
+    else:
+        dates = None
     engine = get_engine(db_dir_name)
     # 不可混淆api内部尝试次数。内部尝试次数默认为3次
     # 整体尝试次数可以设置很大的数。一旦记录的再次尝试代码为空，即退出循环
@@ -197,14 +201,11 @@ def refresh_stock_data(levels, times):
         # 尽量平衡各cpu负载，提高并行效率
         shuffle(all_codes)
     for level in levels:
-        if level == '3.1':
-            dates = get_quote_start_date()
-        else:
-            dates = None
-        kws = {'level': level, 'dates':dates}
+        kws = {'level': level}
         runner = TryToCompleted(batch_refresh_stock_data,
                                 all_codes, kws, retry_times=times)
         runner.run()
+        time.sleep(3)
 
 
 def daily_refresh():

@@ -20,7 +20,8 @@ def batch_codes(iterable):
         1. 初始化浏览器很耗时，且占有大量内存
         2. 切分目标主要是平衡速度与稳定性
     """
-    batch_num = math.ceil(len(iterable) / max_worker / 4)
+    min_batch_num = max_worker * 4
+    batch_num = max(min_batch_num, math.ceil(len(iterable) / max_worker / 4))
     return loop_codes(iterable, batch_num)
 
 
@@ -37,16 +38,16 @@ class TryToCompleted(object):
     def run(self):
         """内部运行过程，直至完成"""
         t_start = time.time()
-        retry = []
+        completed = []
+        retry = {} # 记录重试次数
         for i in range(self._retry_times):
             if i == 0:
                 to_do = batch_codes(self._iterable)
             else:
                 # 此时只需要处理上次异常部分
-                if len(retry) == 0:
+                if len(to_do) == 0:
                     break
-                to_do = batch_codes(retry)
-                retry = []
+                to_do = batch_codes(to_do)
             start = time.time()
             with ThreadPoolExecutor(max_worker) as executor:
                 future_to_codes = {executor.submit(
@@ -55,14 +56,20 @@ class TryToCompleted(object):
                     codes = future_to_codes[future]
                     try:
                         future.result()
+                        completed.extend(codes)                   
                     except Exception as e:
-                        retry.extend(codes)
+                        for code in codes:
+                            num = retry.get(code, 0)
+                            retry[code] = num + 1
                         logger.error('%s' % (e,))
+            # 如果重试三次依然不成功，则忽略
+            to_do = [c for c in retry.keys() if retry[c] <= 3 and c not in set(completed)]
             logger.notice(
-                f'第{i+1}次尝试，用时：{(time.time() - start):.2f}秒，剩余{len(retry)}')
-            time.sleep(self._sleep+i)
-        if len(retry):
-            logger.warn(f'经过{self._retry_times}次尝试，以下尚未完成：{sorted(retry)}')
+                f'第{i+1}次尝试，用时：{(time.time() - start):.2f}秒，剩余：{to_do}')
+            time.sleep(self._sleep)
+        end = set(self._iterable) - set(completed)
+        if len(end):
+            logger.warn(f'经过{i+1}次尝试，以下尚未完成：{sorted(end)}')
         logger.notice(f'总用时：{(time.time() - t_start):.2f}秒')
 
 
