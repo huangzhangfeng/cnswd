@@ -65,7 +65,9 @@ class TryToCompleted(object):
             # 如果重试三次依然不成功，则忽略
             to_do = [c for c in retry.keys() if retry[c] <= 3 and c not in set(completed)]
             logger.notice(
-                f'第{i+1}次尝试，用时：{(time.time() - start):.2f}秒，剩余：{to_do}')
+                f'第{i+1}次尝试，用时：{(time.time() - start):.2f}秒，剩余数量：{len(to_do)}')
+            # 杀死进程firefox
+            os.system('taskkill /f /im firefox.exe')
             time.sleep(self._sleep)
         end = set(self._iterable) - set(completed)
         if len(end):
