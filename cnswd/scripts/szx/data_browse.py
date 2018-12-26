@@ -197,7 +197,7 @@ def refresh_stock_data(levels, times):
     if '3.1' in levels:
         delete_incomplete_quotes()
     with session_scope(db_dir_name) as session:
-        all_codes = get_all_stock(session)[-340:-200]
+        all_codes = get_all_stock(session)
         # 尽量平衡各cpu负载，提高并行效率
         shuffle(all_codes)
     for level in levels:
