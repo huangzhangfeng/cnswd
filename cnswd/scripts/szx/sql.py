@@ -306,11 +306,10 @@ def append_to_quote(table, engine):
         return
     df = table.copy()
     df['股票代码'] = df['股票代码'].str.slice(0, 6)
-    df = df.apply(_convert_to_numeric, include=('5日平均（MA5）', '10日平均（MA10）', '30日平均（MA30）',
-                                                '120日均价', '52周均价（360日）均价', '涨跌幅',
-                                                '本日融资余额', '本日融资买入额', '本日融资偿还额',
-                                                '本日融券余量', '本日融券卖出量', '本日融券偿还量',
-                                                '融券余量金额', '融资融券余额', '股息率TTM'))
+    df = df.apply(_convert_to_numeric, exclude=(
+        '股票代码','股票简称','交易日期','交易所'
+
+    ))
     df['涨跌幅'] = df['涨跌幅'] / 100.
     return _to_sql_table(df, '3.1', engine, '股票代码')
 
