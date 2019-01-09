@@ -67,7 +67,7 @@ class TryToCompleted(object):
             logger.notice(
                 f'第{i+1}次尝试，用时：{(time.time() - start):.2f}秒，剩余数量：{len(to_do)}')
             # 杀死进程firefox
-            os.system('taskkill /f /im firefox.exe')
+            # os.system('taskkill /f /im firefox.exe')
             time.sleep(self._sleep)
         end = set(self._iterable) - set(completed)
         if len(end):
