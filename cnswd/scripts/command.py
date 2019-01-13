@@ -235,10 +235,3 @@ def szsh_tct_gn():
 def szsh_main_index_daily():
     """刷新主要指数日线数据"""
     flush_index_daily()
-
-
-@stock.command()
-def test():
-    """测试"""
-    df = pd.DataFrame({'a':[1,2,3]})
-    df.to_csv('x.csv')
