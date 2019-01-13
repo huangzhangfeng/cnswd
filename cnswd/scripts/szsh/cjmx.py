@@ -197,18 +197,19 @@ def _wy_fix_data(df):
     return df
 
 
-def wy_to_db(code, date):
+def wy_to_db(codes, date):
     engine = get_engine(db_dir_name)
-    if has_traded(code, date) and not has_cjmx(code, date):
-        date_str = date.strftime(DATE_FMT)
-        try:
-            df = wy_fetch_cjmx(code, date_str)
-        except NoWebData as e:
-            logger.info(f'股票：{code} {date_str} {e!r}')
-            return
-        df = _wy_fix_data(df)
-        df.to_sql(CJMX.__tablename__, engine, if_exists='append', index=False)
-        logger.info(f'股票：{code} {date_str} 共{len(df):>3}行')
+    for code in codes:
+        if has_traded(code, date) and not has_cjmx(code, date):
+            date_str = date.strftime(DATE_FMT)
+            try:
+                df = wy_fetch_cjmx(code, date_str)
+            except NoWebData as e:
+                logger.info(f'股票：{code} {date_str} {e!r}')
+                return
+            df = _wy_fix_data(df)
+            df.to_sql(CJMX.__tablename__, engine, if_exists='append', index=False)
+            logger.info(f'股票：{code} {date_str} 共{len(df):>3}行')
 
 
 def wy_refresh_cjmx(date_str):
@@ -219,9 +220,11 @@ def wy_refresh_cjmx(date_str):
     date = pd.Timestamp(date_str).date()
     p_func = partial(wy_to_db, date=date)
     p_codes = loop_codes(codes, 300)
+    kws = {'exs': (URLError, TimeoutError)}
     # 当一次性map时，经常会出现长时间堵塞，尝试分批执行
     for i, b_codes in enumerate(p_codes):
         logger.notice(f"第{i+1}批，共{len(b_codes)}代码")
-        runner = TryToCompleted(p_func, b_codes, (URLError, TimeoutError), 10, 3)
+        runner = TryToCompleted(p_func, b_codes, kws, retry_times=10, sleep=3)
         runner.run()
         time.sleep(1)
+        del runner

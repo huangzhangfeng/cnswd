@@ -31,6 +31,8 @@ class TryToCompleted(object):
     def __init__(self, func, iterable, kws={}, retry_times=30, sleep=3):
         self._func = func
         self._iterable = iterable
+        # 异常
+        self._e = kws.pop('exs',Exception)
         self._kws = kws
         self._retry_times = retry_times
         self._sleep = sleep
@@ -57,7 +59,7 @@ class TryToCompleted(object):
                     try:
                         future.result()
                         completed.extend(codes)                   
-                    except Exception as e:
+                    except self._e as e:
                         for code in codes:
                             num = retry.get(code, 0)
                             retry[code] = num + 1
