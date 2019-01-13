@@ -57,9 +57,13 @@ def is_trading_time():
 
 def remove_temp_files():
     """删除日志、缓存文件"""
-    dirs = ['logs','webcache']
+    dirs = ['geckordriver', 'webcache', 'download']
     for d in dirs:
         path = data_root(d)
-        shutil.rmtree(path)
+        try:
+            shutil.rmtree(path)
+        except PermissionError:
+            # 可能后台正在使用中，忽略
+            pass
         # 然后再创建该目录
         data_root(d)

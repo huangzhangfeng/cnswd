@@ -159,17 +159,9 @@ def info_disclosure_init():
 
 
 @stock.command()
-@click.option('--date', default=None, help='刷新日期')
-def info_disclosure(date):
+def info_disclosure():
     """刷新公司公告"""
-    if date is None:
-        date = pd.Timestamp('today')
-        if date.hour > 15:
-            date = date + pd.Timedelta(days=1)
-    else:
-        date = pd.Timestamp(date)
-
-    async def main(): return await refresh_disclosure(date)
+    async def main(): return await refresh_disclosure()
     asyncio.run(main())
 
 

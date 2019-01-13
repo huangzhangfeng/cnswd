@@ -17,10 +17,10 @@ import logbook
 import pandas as pd
 import requests
 from logbook.more import ColorizedStderrHandler
+from sqlalchemy import func
 
 from cnswd.sql.base import get_engine, get_session
 from cnswd.sql.info import Disclosure
-
 
 logger = logbook.Logger('公司公告')
 
@@ -218,10 +218,28 @@ def _refresh(df, session):
         logger.info(f"{dt} 添加{len(to_add)}行")
 
 
-async def refresh_disclosure(date):
+def last_date(session):
+    """查询公司公告最后一天"""
+    return session.query(func.max(Disclosure.公告时间)).scalar()
+
+
+async def refresh_disclosure():
     """刷新公司公告"""
     session = get_session(db_dir_name='info')
+    today = pd.Timestamp('today')
+    end_date = today + pd.Timedelta(days=1)
+    start_date = last_date(session)
+    if start_date is None:
+        start_date = pd.Timestamp('2010-01-01')
+    else:
+        start_date = start_date + pd.Timedelta(days=1)
+    # 可以提取明天的公司公告
+    if start_date > end_date + pd.Timedelta(days=1):
+        return
+    date_rng = pd.date_range(start_date, end_date)
     async with aiohttp.ClientSession() as web_session:
-        df = await fetch_one_day(web_session, date)
-        _refresh(df, session)
+        for d in date_rng:
+            df = await fetch_one_day(web_session, d)
+            _refresh(df, session)
+            del df
     session.close()
