@@ -16,7 +16,7 @@ setup(
     安装方法参考 https://askubuntu.com/questions/870530/how-to-install-geckodriver-in-ubuntu
     """,
     install_requires=requires +
-    ['python_version>="3.7";platform_system=="Windows"'],
+    ['python_version>="3.7"'],
     tests_require=["pytest", "parameterized"],
     include_package_data=True,
     entry_points={

@@ -226,13 +226,6 @@ def szsh_treasury():
 
 
 @stock.command()
-def szsh_ths_gn():
-    """同花顺概念列表"""
-    # TODO:经常会遭到屏蔽
-    update_gn_list()
-
-
-@stock.command()
 def szsh_tct_gn():
     """刷新腾讯概念股票列表"""
     tct_gn_refresh()
@@ -242,3 +235,10 @@ def szsh_tct_gn():
 def szsh_main_index_daily():
     """刷新主要指数日线数据"""
     flush_index_daily()
+
+
+@stock.command()
+def test():
+    """测试"""
+    df = pd.DataFrame({'a':[1,2,3]})
+    df.to_csv('x.csv')
