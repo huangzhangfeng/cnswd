@@ -208,6 +208,9 @@ def wy_to_db(codes, date):
                 logger.info(f'股票：{code} {date_str} {e!r}')
                 return
             df = _wy_fix_data(df)
+            # 保留2位小数
+            df['价格变动'] = (df['价格变动'] * 100).astype('int') / 100.0
+            df['成交额'] = (df['成交额'] * 100).astype('int') / 100.0
             df.to_sql(CJMX.__tablename__, engine, if_exists='append', index=False)
             logger.info(f'股票：{code} {date_str} 共{len(df):>3}行')
 
