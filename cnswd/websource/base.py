@@ -18,7 +18,7 @@ class DownloadRecord(object):
 	run_time = {}
 
 
-def friendly_download(times=20, duration=None, max_sleep=1):
+def friendly_download(times=20, duration=None, max_sleep=1, show=False):
 	"""
 	下载函数装饰器
 
@@ -40,7 +40,8 @@ def friendly_download(times=20, duration=None, max_sleep=1):
 
 		def sleep():
 			t = np.random.randint(1, max_sleep * 100) / 100
-			logger.info('每调用函数"{}"{}次，休眠{}秒'.format(key, times, t))
+			if show:
+				logger.info('每调用函数"{}"{}次，休眠{}秒'.format(key, times, t))
 			time.sleep(t)
 
 		@wraps(func)

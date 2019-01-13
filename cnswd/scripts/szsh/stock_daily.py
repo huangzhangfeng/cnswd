@@ -46,20 +46,15 @@ def get_data(code):
 
 def refresh_daily():
     """刷新股票日线数据"""
-    # 使用 `not need_refresh()`
-    # 未来日期在数据库中无数据，返回None。 not None -> True
-    if not need_refresh():
-        return
+    logger.info('刷新股票日线数据......')
     start = time.time()
     codes = get_valid_codes()
     with Pool(max_worker) as p:
         dfs = p.map(get_data, codes)
-    # with ThreadPoolExecutor(max_worker) as executor:
-    #     dfs = executor.map(get_data, codes)
     engine = get_engine(db_dir_name)
     table_name = 'stock_dailies'
     to_add = pd.concat(dfs)
     if len(to_add):
         to_add.to_sql(table_name, engine, if_exists='append')
         logger.info(f'添加{to_add.shape[0]:>4}行')
-    print(f"总用时：{(time.time() - start):>.4f}秒")
+    logger.info(f"总用时：{(time.time() - start):>.4f}秒")
