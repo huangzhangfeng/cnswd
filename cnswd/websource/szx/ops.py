@@ -7,6 +7,7 @@ from enum import Enum
 
 import pandas as pd
 from selenium.common.exceptions import (ElementNotInteractableException,
+                                        TimeoutException,
                                         NoSuchElementException)
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -208,41 +209,32 @@ def get_classify_codes(driver, only_code=False):
         return df
 
 
-def get_classify_table(wait, driver, level, only_end):
+def get_classify_table(api, level):
     """获取层级分类信息表
     
     Arguments:
-        wait {wait对象} -- wait对象
-        driver {driver对象} -- driver对象
+        api {api} -- api对象
         level {str} -- 分类层级，如`1.2`,`2.4.11`
-    
-    Keyword Arguments:
-        only_end {bool} -- 是否只提取最末端的层级 (default: {True})
-                           默认为真。忽略含有子级的父层级
-                           如`2.1.2`为末端，则`2.1`会忽略
     """
     root_css = '.detail-cont-tree'
-    li = select_level(driver, root_css, level)
-    attr = li.get_attribute('class')
-    if attr == 'tree-empty':
-        tag_name = 'a'
-    else:
-        tag_name = 'span'
-        if only_end:
-            reset_level(driver, root_css, level)
-            return pd.DataFrame()
-    wait_code_loaded(wait)
-    # 层级越高，股票数量越多，等待的时间越长。等待代码加载还是没有真正完成
-    num = get_unselect_count(driver)
+    li = select_level(api.driver, root_css, level, False)
+    tag_name = 'a'
+    css = 'div.select-box:nth-child(1) > div:nth-child(3) > ul:nth-child(1) li'
+    try:
+        api.wait_2.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, css)))
+    except TimeoutException:
+        api.logger.notice(f"{level} 无数据")
+    # 必须在等待后，才提取待选数。若非如此，提取的是上一次的待选数量。导致后续误判。
+    num = get_unselect_count(api.driver)
     if num == 0:
-        reset_level(driver, root_css, level)
+        reset_level(api.driver, root_css, level)
         return pd.DataFrame()
-    sl = min(1.5, max(num / 300, TINY_WAIT_SECOND))  # 最长不超过1.5秒
-    time.sleep(sl)
+    # sl = min(1.5, max(num / 300, TINY_WAIT_SECOND))  # 最长不超过1.5秒
+    # time.sleep(sl)
     # 读取信息
-    df = read_li_table(driver, li, tag_name)
+    df = read_li_table(api.driver, li, tag_name)
     # 折叠根树
-    reset_level(driver, root_css, level)
+    reset_level(api.driver, root_css, level)
     return df
 
 

@@ -16,7 +16,7 @@ from selenium.webdriver.support.ui import Select, WebDriverWait
 from . import ops
 from .._selenium import make_headless_browser
 from ._firefox import clear_firefox_cache
-from .constants import TIMEOUT
+from .constants import TIMEOUT,TIMEOUT_2
 
 HOME_URL_FMT = 'http://webapi.cninfo.com.cn/#/{}'
 
@@ -55,6 +55,8 @@ class SZXPage(object):
         # 通用部分
         self.wait = WebDriverWait(
             self.driver, TIMEOUT, poll_frequency=POLL_FREQUENCY)
+        self.wait_2 = WebDriverWait(
+            self.driver, TIMEOUT_2, poll_frequency=POLL_FREQUENCY)
         self.retry_times = retry_times
         super().__init__(**kwds)
 

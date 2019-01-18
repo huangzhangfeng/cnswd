@@ -674,6 +674,7 @@ class DataBrowser(SZXPage):
             return self.get_financial_indicator_ranking(codes, start, end)
         raise NotImplementedError('不支持数据项目“{}”'.format(item))
 
+    @lru_cache(6)
     def get_levels_for(self, nth=3):
         """获取第nth种类别的分类层级"""
         res = []
@@ -690,7 +691,7 @@ class DataBrowser(SZXPage):
         get_all_children(li, nth)
         return [x for _, x in res]
 
-    def get_total_classify_info(self, nths, depth=5, only_end=True):
+    def get_total_classify_info(self, nths, depth=5):
         """获取nths种类别，限定层级为depth的分类信息
         
         Arguments:
@@ -717,21 +718,27 @@ class DataBrowser(SZXPage):
         dfs = []
         for l in choosed:
             self.logger.info('当前分类层级:{}'.format(l))
-            df = ops.get_classify_table(self.wait, self.driver, l, only_end)
+            df = ops.get_classify_table(self, l)
             dfs.append(df)
         return _concat(dfs)
 
-    def yield_total_classify_table(self, only_end):
+    def _is_end_level(self, x):
+        """判断层级是否为最末端"""
+        ls = {'1':4,'2':3,'3':5,'4':3,'5':2,'6':2}
+        r = x.split('.')
+        return ls[r[0]] == len(r)
+
+    def yield_total_classify_table(self):
         """输出表供写入数据库"""
         levels = []
         for nth in (1, 2, 3, 4, 5, 6):
             levels.extend(self.get_levels_for(nth))
         # CDR当前不可用
-        levels = [x for x in levels if x not in ('6.6','6.9')]
+        levels = [x for x in levels if x not in ('6.6','6.9') and self._is_end_level(x)]
         self.logger.info('分类层级数量:{}'.format(len(levels)))
         for l in levels:
             self.logger.info('当前分类层级:{}'.format(l))
-            df = ops.get_classify_table(self.wait, self.driver, l, only_end)
+            df = ops.get_classify_table(self, l)
             if len(df):
                 df['分类层级'] = l
             else:
@@ -745,10 +752,10 @@ class DataBrowser(SZXPage):
             levels.extend(self.get_levels_for(nth))
         return levels
 
-    def get_classify_stock(self, level, only_end=True):
+    def get_classify_stock(self, level):
         """获取分类层级下的股票列表"""
         self.logger.info(f'分类层级：{level}')
-        df = ops.get_classify_table(self.wait, self.driver, level, only_end)
+        df = ops.get_classify_table(self, level)
         if len(df):
             df['分类层级'] = level
         else:

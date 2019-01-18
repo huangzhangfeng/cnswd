@@ -13,6 +13,7 @@ from numpy.random import shuffle
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
+from cnswd.data_proxy import DataProxy
 from cnswd.sql.base import get_engine, get_session, session_scope
 from cnswd.sql.szx import (IPO, Classification, ClassificationBom, Quote,
                            StockInfo)
@@ -24,7 +25,6 @@ from ..utils import create_tables
 from .base import (DATE_MAPS, MODEL_MAPS, get_all_stock, get_bank_stock,
                    get_quote_start_date, get_start_date, has_data)
 from .sql import write_to_sql
-
 
 logger = logbook.Logger('深证信')
 db_dir_name = 'szx'
@@ -289,16 +289,41 @@ def quarterly_refresh():
 
 def update_stock_classify():
     """更新股票分类信息"""
-    delete_data_of(Classification)
     table = Classification.__tablename__
     api = DataBrowser(True)
-    for df in api.yield_total_classify_table(True):
+    levels = []
+    for nth in (1, 2, 3, 4, 5, 6):
+        levels.extend(api.get_levels_for(nth))
+    # CDR当前不可用
+    levels = [x for x in levels if x not in (
+        '6.6', '6.9') and api._is_end_level(x)]
+    classify_proxy = DataProxy(api.get_classify_stock, freq='D')
+    done = []
+    dfs = []
+    for i in range(10):
+        to_do = set(levels) - set(done)
+        if len(to_do) == 0:
+            break
+        api.logger.notice(f'第{i+1}次尝试，剩余分类层级数量:{len(to_do)}')
+        for level in sorted(to_do):
+            try:
+                df = classify_proxy.read(level=level)
+                dfs.append(df)
+                done.append(level)
+            except Exception:
+                pass
+        time.sleep(1)
+
+    api.driver.quit()
+    # 完整下载后，才删除旧数据
+    delete_data_of(Classification)
+
+    for df in dfs:
         if not df.empty:
             df.to_sql(table, get_engine(db_dir_name),
                       if_exists='append', index=False)
             api.logger.info(
                 f'表：{table} 添加{len(df):>4}行')
-    api.driver.quit()
 
 
 def update_classify_bom():
