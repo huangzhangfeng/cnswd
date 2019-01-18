@@ -8,6 +8,9 @@ $ stock create --db_dir_name=cn
 $ stock stock-daily
 
 建议使用后台任务计划，自动刷新数据。参考`cnswd/regular_tasks/bg_tasks.cron`说明
+
+深证信凌晨时段比较可靠。
+
 """
 from __future__ import absolute_import, division, print_function
 
@@ -107,10 +110,9 @@ def szx_bank_data():
 
 @stock.command()
 @click.option('--levels', default=None, help='项目层级')
-@click.option('--times', default=30, help='刷新最多尝试次数')
-def szx_data(levels, times):
+def szx_data(levels):
     """刷新股票数据"""
-    data_browse.refresh_stock_data(levels, times)
+    data_browse.refresh_stock_data(levels)
 
 
 @stock.command()

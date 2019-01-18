@@ -9,16 +9,16 @@ import time
 
 import logbook
 import pandas as pd
-from numpy.random import shuffle
-from sqlalchemy import func
-from sqlalchemy.exc import IntegrityError
-
+from cnswd.constants import MARKET_START
 from cnswd.data_proxy import DataProxy
 from cnswd.sql.base import get_engine, get_session, session_scope
 from cnswd.sql.szx import (IPO, Classification, ClassificationBom, Quote,
                            StockInfo)
 from cnswd.utils import ensure_list, loop_codes
 from cnswd.websource import DataBrowser
+from numpy.random import shuffle
+from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 
 from ..runner import TryToCompleted
 from ..utils import create_tables
@@ -30,6 +30,8 @@ logger = logbook.Logger('深证信')
 db_dir_name = 'szx'
 START_CHECK = (pd.Timestamp('today') - pd.Timedelta(days=30)).date()
 B_2007_LEVELS = ('8.3.4', '8.3.5', '8.3.6')
+DELAYS = {'3.1': 7}
+START_MAPS = {'3.1': MARKET_START.tz_localize(None)}
 
 
 def default_ordered_levels():
@@ -102,11 +104,24 @@ def update_stock_info(rewrite=False):
     """刷新股票基本信息(含IPO)"""
     if rewrite:
         delete_data_of(StockInfo)
+    done = {}
     levels = ('1.1', '7.5')
-    with DataBrowser(True) as api:
-        for level in levels:
-            df = api.query(level)
-            _update_or_insert_info(df, level)
+    for _ in range(3):
+        all_ok = all([done.get(l, False) for l in levels])
+        if all_ok:
+            break
+        with DataBrowser(True) as api:
+            for level in levels:
+                ok = done.get(level, False)
+                if ok:
+                    continue
+                try:
+                    df = api.query(level)
+                    _update_or_insert_info(df, level)
+                    done[level] = True
+                except Exception as e:
+                    api.logger.notice(f"{e!r}")
+            time.sleep(1)
 
 
 def _get_q_start_date(level, delay):
@@ -148,6 +163,7 @@ def refresh_bank_data():
     """刷新金融业专项财务数据"""
     engine = get_engine(db_dir_name)
     delay = 135
+    # 注意，尽管使用全部代码，但银行专项只有金融业股票才有数据
     with DataBrowser(True) as api:
         for level in B_2007_LEVELS:
             start = _get_q_start_date(level, delay)
@@ -198,32 +214,57 @@ def _select_rows_from(level, df, start):
     return df.loc[cond, :]
 
 
-def batch_refresh_stock_data(codes, level):
-    """分批刷新股票数据"""
-    if level == '3.1':
-        dates = get_quote_start_date()
-    else:
-        dates = None
-    engine = get_engine(db_dir_name)
-    # 不可混淆api内部尝试次数。内部尝试次数默认为3次
-    # 整体尝试次数可以设置很大的数。一旦记录的再次尝试代码为空，即退出循环
-    with DataBrowser(True) as api:
-        for code in codes:
-            # 使暂停上市、退市股票开始日期无效
-            if level == '3.1':
-                start = dates.at[code, '开始日期'].date()
-            else:
-                with session_scope(db_dir_name) as session:
-                    start = get_start_date(session, level, code)
-            if start > pd.Timestamp('today').date():
+def _insert(df, level):
+    session = get_session(db_dir_name)
+    class_ = MODEL_MAPS[level]
+    table = class_.__tablename__
+    cols = df.columns
+    d_name = DATE_MAPS[level]
+    for code, s in df.iterrows():
+        obj = class_()
+        d = s[d_name].strftime(r'%Y-%m-%d')
+        obj.股票代码 = code
+        for col in cols:
+            v = s[col]
+            if pd.isna(v) or pd.isnull(v):
                 continue
-            df = api.get_data(level, code, start)
-            # 选择自开始日期起的行
-            df = _select_rows_from(level, df, start)
-            if level == '4.1' and (not df.empty):
-                # 去掉研究员为空的记录(年份久远的数据可能存在，不影响)
-                df = df.loc[df['研究员名称'].str.len() > 0, :]
-            write_to_sql(engine, df, level)
+            setattr(obj, col, v)
+        session.add(obj)
+        try:
+            session.commit()
+            logger.info(f"插入表：{table} 股票代码：{code} 日期：{d}")
+        except IntegrityError:
+            session.rollback()
+    session.close()
+
+
+def _get_d_start_date(level):
+    """日线数据开始刷新时间"""
+    session = get_session(db_dir_name)
+    class_ = MODEL_MAPS[level]
+    delay = DELAYS[level]
+    if level in ('3.1',):
+        expr = class_.交易日期
+    t_end_date = session.query(func.max(expr)).scalar()
+    if t_end_date is None:
+        return START_MAPS[level]
+    else:
+        # 自前溯delay天开始
+        return t_end_date - pd.Timedelta(days=delay)
+
+
+def _refresh_stock_data(level):
+    """刷新股票数据"""
+    engine = get_engine(db_dir_name)
+    with DataBrowser(True) as api:
+        # 使暂停上市、退市股票开始日期无效
+        start = _get_d_start_date(level)
+        df = api.get_data(level, start=start)
+        if level == '4.1' and (not df.empty):
+            # 去掉研究员为空的记录(年份久远的数据可能存在，不影响)
+            df = df.loc[df['研究员名称'].str.len() > 0, :]
+        df = write_to_sql(engine, df, level, save=False)
+        _insert(df, level)
 
 
 def valid_level(levels):
@@ -235,7 +276,7 @@ def valid_level(levels):
             raise ValueError(f"刷新szx股票信息，{l}不是有效项目")
 
 
-def refresh_stock_data(levels, times):
+def refresh_stock_data(levels):
     """刷新股票数据"""
     if levels is None:
         # 默认除金融项目、股票基本资料、IPO外的所有项目
@@ -245,18 +286,8 @@ def refresh_stock_data(levels, times):
     valid_level(levels)
     if '3.1' in levels:
         delete_incomplete_quotes()
-    with session_scope(db_dir_name) as session:
-        all_codes = get_all_stock(session)
-        # 尽量平衡各cpu负载，提高并行效率
-        shuffle(all_codes)
     for level in levels:
-        kws = {'level': level}
-        runner = TryToCompleted(batch_refresh_stock_data,
-                                all_codes, kws, retry_times=times)
-        runner.run()
-        time.sleep(3)
-
-# TODO:整理
+        _refresh_stock_data(level)
 
 
 def daily_refresh():

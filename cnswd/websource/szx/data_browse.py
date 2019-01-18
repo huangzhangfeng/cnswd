@@ -4,6 +4,7 @@
 
 **新版**可以一次性加载所有股票代码，但需要注意单次查询的行数不要超限(20000?)。
 
+当前深证信系统不稳定！！！
 """
 import re
 import time
@@ -134,7 +135,7 @@ class DataBrowser(SZXPage):
             btn.click()
             num_elem = self.driver.find_element_by_css_selector(num_css)
             self._num = ops.get_count(num_elem)
-            self.logger.info(f"加载{market}，累计{self._num}个股票代码。")
+            self.logger.info(f"加载{market}，累计{self._num}个股票代码")
         self._loaded = True
 
     def _on_pop_alert(self):
@@ -293,9 +294,9 @@ class DataBrowser(SZXPage):
             self, '.dataBrowseBtn', self.retry_times)
         if status == ops.ResponseStatus.nodata:
             return pd.DataFrame()
-        elif status == ops.ResponseStatus.failed:
-            tip = (self.current_level, self.current_code, self.current_t1_value, self.current_t2_value)
-            raise ops.RetryException(f'<id={id(self)}> {tip} 加载失败，请重试')
+        # elif status == ops.ResponseStatus.failed:
+        #     tip = (self.current_level, self.current_code, self.current_t1_value, self.current_t2_value)
+        #     raise ops.RetryException(f'<id={id(self)}> {tip} 加载失败，请重试')
         # 排除无数据或者延时(数据量大导致加载延时)情形，以下部分至少有一页数据
         # 一般情况下不会发生，在此前已经将提取单元缩小到必要程度，除非网络问题导致
         # 读取分页信息
@@ -364,8 +365,8 @@ class DataBrowser(SZXPage):
         """获取行情数据(3.1)"""
         if loop_ps:
             dfs = []
-            ps = loop_period_by(start, end, 'M', False)
-            # 按月循环
+            ps = loop_period_by(start, end, 'W', False)
+            # 按周循环
             for s, e in ps:
                 df = self.query('行情数据', codes, s.strftime(
                     r'%Y-%m-%d'), e.strftime(r'%Y-%m-%d'))
