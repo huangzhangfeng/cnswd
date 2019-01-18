@@ -29,6 +29,8 @@ def make_headless_browser():
     """无头浏览器"""
     options = Options()
     options.headless = True
+    # # 禁用gpu加速
+    # options.add_argument('--disable-gpu')
     return webdriver.Firefox(options=options, service_log_path=LOG_PATH)
 
 

@@ -13,7 +13,7 @@ class ClassificationBom(Base):
     """分类编码"""
     分类名称 = Column(Text)
     分类编码 = Column(Text, primary_key=True, nullable=False)
-    平台类别 = Column(Text, primary_key=True)
+    平台类别 = Column(Text, primary_key=True, nullable=False)
 
 
 class Classification(Base):

@@ -237,7 +237,7 @@ def get_classify_table(wait, driver, level, only_end):
     if num == 0:
         reset_level(driver, root_css, level)
         return pd.DataFrame()
-    sl = max(num / 500, TINY_WAIT_SECOND)  # 等待时间加长，此处经常存在异常
+    sl = min(1.5, max(num / 300, TINY_WAIT_SECOND))  # 最长不超过1.5秒
     time.sleep(sl)
     # 读取信息
     df = read_li_table(driver, li, tag_name)
@@ -343,7 +343,7 @@ def wait_responsive_table_loaded(api, css, times):
         _data_browse(api, css)
         status = get_response_status(api.driver)
         if status != ResponseStatus.retry:
-            return status    
+            return status
         time.sleep(1)
     return ResponseStatus.failed
 

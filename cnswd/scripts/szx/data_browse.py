@@ -2,10 +2,7 @@
 
 深证信数据搜索
 
-备注
-    考虑到后台任务可能在某个时点重叠，使用本机cpu一半作为最大数量
 """
-
 import math
 import os
 import time
@@ -14,6 +11,7 @@ import logbook
 import pandas as pd
 from numpy.random import shuffle
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 
 from cnswd.sql.base import get_engine, get_session, session_scope
 from cnswd.sql.szx import (IPO, Classification, ClassificationBom, Quote,
@@ -26,6 +24,7 @@ from ..utils import create_tables
 from .base import (DATE_MAPS, MODEL_MAPS, get_all_stock, get_bank_stock,
                    get_quote_start_date, get_start_date, has_data)
 from .sql import write_to_sql
+
 
 logger = logbook.Logger('深证信')
 db_dir_name = 'szx'
@@ -58,54 +57,104 @@ def batch_get_data(codes, data_item, start=None, end=None):
         return api.get_data(data_item, codes, start, end)
 
 
-def _batch_insert_stock_info(codes):
-    levels = ('1.1', '7.5')
+def _insert_info(session, class_, s, cols, code):
+    logger.info(f"插入表：{class_.__tablename__} 股票代码：{code}")
+    obj = class_()
+    obj.股票代码 = code
+    for col in cols:
+        v = s[col]
+        if pd.isna(v) or pd.isnull(v):
+            continue
+        setattr(obj, col, v)
+    session.add(obj)
+    session.commit()
+
+
+def _update_info(session, obj, s, cols, code):
+    logger.info(f"更新表：{obj.__tablename__} 股票代码：{code}")
+    for col in cols:
+        v = s[col]
+        if pd.isna(v) or pd.isnull(v):
+            continue
+        setattr(obj, col, v)
+    session.commit()
+
+
+def _update_or_insert_info(df, level):
+    if df.empty:
+        return
     engine = get_engine(db_dir_name)
     session = get_session(db_dir_name)
-    with DataBrowser(True) as api:
-        for code in codes:
-            for level in levels:
-                # IPO信息不会发生变动
-                if level == '7.5':
-                    if has_data(session, code, level):
-                        continue
-                df = api.get_data(level, code)
-                write_to_sql(engine, df, level)
+    df = write_to_sql(engine, df, level, save=False)
+    cols = df.columns
+    class_ = MODEL_MAPS[level]
+    for code, s in df.iterrows():
+        obj = session.query(class_).filter(class_.股票代码 == code).one_or_none()
+        if obj is None:
+            _insert_info(session, class_, s, cols, code)
+        else:
+            if level != '7.5':
+                _update_info(session, obj, s, cols, code)
+    session.close()
 
 
 def update_stock_info(rewrite=False):
     """刷新股票基本信息(含IPO)"""
-    with DataBrowser(True) as api:
-        codes = api.get_stock_code()
     if rewrite:
         delete_data_of(StockInfo)
-    runner = TryToCompleted(_batch_insert_stock_info, codes)
-    runner.run()
-
-
-def batch_refresh_bank_data(codes):
-    """刷新金融业专项财务数据"""
-    session = get_session(db_dir_name)
-    engine = get_engine(db_dir_name)
+    levels = ('1.1', '7.5')
     with DataBrowser(True) as api:
-        for code in codes:
-            for level in B_2007_LEVELS:
-                start = get_start_date(session, level, code)
-                if start > pd.Timestamp('today').date():
-                    continue
-                df = api.get_data(level, code, start)
-                if not df.empty:
-                    write_to_sql(engine, df, level)
-    session.close()
+        for level in levels:
+            df = api.query(level)
+            _update_or_insert_info(df, level)
 
 
-def refresh_bank_data(times=5):
-    """刷新金融业专项财务数据"""
+def _get_q_start_date(level, delay):
+    """财务报告类数据开始刷新时间"""
     session = get_session(db_dir_name)
-    codes = get_bank_stock(session)
+    class_ = MODEL_MAPS[level]
+    t_end_date = session.query(func.max(class_.报告年度)).scalar()
+    if t_end_date is None:
+        return pd.Timestamp('2006-01-01')
+    else:
+        # 可能存在近期发布的数据
+        return pd.Timestamp('today') - pd.Timedelta(days=delay)
+
+
+def _f_part_insert(df, level):
+    session = get_session(db_dir_name)
+    class_ = MODEL_MAPS[level]
+    table = class_.__tablename__
+    cols = df.columns
+    for code, s in df.iterrows():
+        obj = class_()
+        d = s['报告年度'].strftime(r'%Y-%m-%d')
+        obj.股票代码 = code
+        for col in cols:
+            v = s[col]
+            if pd.isna(v) or pd.isnull(v):
+                continue
+            setattr(obj, col, v)
+        session.add(obj)
+        try:
+            session.commit()
+            logger.info(f"插入表：{table} 股票代码：{code} 报告年度：{d}")
+        except IntegrityError:
+            session.rollback()
     session.close()
-    runner = TryToCompleted(batch_refresh_bank_data, codes, retry_times=times)
-    runner.run()
+
+
+def refresh_bank_data():
+    """刷新金融业专项财务数据"""
+    engine = get_engine(db_dir_name)
+    delay = 135
+    with DataBrowser(True) as api:
+        for level in B_2007_LEVELS:
+            start = _get_q_start_date(level, delay)
+            df = api.get_data(level, start=start)
+            df = write_to_sql(engine, df, level, save=False)
+            if not df.empty:
+                _f_part_insert(df, level)
 
 
 def delete_incomplete_quotes():
@@ -207,6 +256,8 @@ def refresh_stock_data(levels, times):
         runner.run()
         time.sleep(3)
 
+# TODO:整理
+
 
 def daily_refresh():
     """每日刷新数据"""
@@ -216,7 +267,7 @@ def daily_refresh():
 
 def weekly_refresh():
     """每周刷新数据"""
-    update_stock_classify(rewrite=False, times=1)
+    update_stock_classify()
     levels = ['2.1', '2.2', '2.3', '2.4', '4.1',
               '5.1', '7.1', '7.2', '7.3', '7.4']
     refresh_stock_data(levels, 30)
@@ -225,7 +276,7 @@ def weekly_refresh():
 def monthly_refresh():
     """每月刷新数据"""
     update_stock_info(True)
-    update_stock_classify(rewrite=True, times=10)
+    update_stock_classify()
 
 
 def quarterly_refresh():
@@ -236,67 +287,18 @@ def quarterly_refresh():
     refresh_stock_data(levels, 30)
 
 
-def batch_stock_classify(levels, times):
-    """分批获取层级分类股票列表"""
-    # 以下情形判断为完成状态
-    # 1. 如果数据库已有层级数据
-    # 2. 上次提取无异常，尽管无数据
-    progress = {}  # 记录level提取状态，防止重复提取
+def update_stock_classify():
+    """更新股票分类信息"""
+    delete_data_of(Classification)
     table = Classification.__tablename__
-    with DataBrowser(True) as api:
-        for i in range(times):
-            with session_scope(db_dir_name) as sess:
-                db_levels = sess.query(Classification.分类层级).distinct()
-            to_do = set(levels) - set([x[0] for x in db_levels])
-            if len(to_do) == 0:
-                break
-            api.logger.notice(f'第{i+1}次尝试，提取{len(to_do)}个分类层级......')
-            for level in to_do:
-                if progress.get(level):
-                    api.logger.info(f'分类：{level} 数据已完成，跳过')
-                    continue
-                try:
-                    df = api.get_classify_stock(level)
-                    if not df.empty:
-                        df.to_sql(table, get_engine(db_dir_name),
-                                  if_exists='append', index=False)
-                        api.logger.info(
-                            f'表：{table} 分类：{level} 已添加{len(df):>4}行')
-                    else:
-                        api.logger.info(f'分类：{level} 无数据')
-                    progress[level] = True
-                except Exception as e:
-                    progress[level] = False
-                    api.logger.error(f'{level} {e!r}')
-            time.sleep(1)
-    # 报告尚未完成的分类层级
-    for k, v in progress.items():
-        if not v:
-            print(f'{k} 尚未完成')
-    time.sleep(1)
-
-
-def update_stock_classify(rewrite, times):
-    """更新股票分类信息
-    
-    Arguments:
-        rewrite {bool} -- 是否重写数据。如重写，首先删除表中数据
-        times {int} -- 重试次数
-    """
-    if rewrite:
-        delete_data_of(Classification)
-    with DataBrowser() as api:
-        # 防止冲突，仅分六组
-        p_levels = []
-        for nth in (1, 2, 3, 4, 5, 6):
-            levels = api.get_levels_for(nth)
-            if nth == 6:
-                # CDR当前不可用
-                levels.remove('6.6')
-                levels.remove('6.9')
-            p_levels.append(levels)
-    runner = TryToCompleted(batch_stock_classify, levels, retry_times=times)
-    runner.run()
+    api = DataBrowser(True)
+    for df in api.yield_total_classify_table(True):
+        if not df.empty:
+            df.to_sql(table, get_engine(db_dir_name),
+                      if_exists='append', index=False)
+            api.logger.info(
+                f'表：{table} 添加{len(df):>4}行')
+    api.driver.quit()
 
 
 def update_classify_bom():
@@ -312,7 +314,7 @@ def init_szx():
     """初始化深证信数据库"""
     create_tables(db_dir_name, False)
     update_stock_info(True)
-    update_stock_classify(rewrite=True, times=10)
+    update_stock_classify()
     refresh_bank_data()
     # 除股票基本资料、IPO及金融行业外的数据项目
     levels = [x for x in DATE_MAPS.keys() if x not in B_2007_LEVELS]

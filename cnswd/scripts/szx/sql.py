@@ -216,7 +216,7 @@ def _to_sql_table(df, level, engine, index_label, if_exists='append', dtype={}, 
         return df
 
 
-def append_to_stock_info(table, engine):
+def t_1_1(table, engine, save):
     """添加股票基本资料到数据库中的stock_infos表"""
     if table.empty:
         return
@@ -226,12 +226,13 @@ def append_to_stock_info(table, engine):
                        "证券类别": "股票类别"},
               inplace=True)
     df['股票代码'] = df['股票代码'].map(_to_code)
+    df = df.apply(_convert_to_numeric, include=('注册资本',))
     # 改为元为单位
     df['注册资本'] = df['注册资本'] * 10000
-    return _to_sql_table(df, '1.1', engine, '股票代码')
+    return _to_sql_table(df, '1.1', engine, '股票代码', save=save)
 
 
-def append_to_actual_controller(table, engine):
+def t_2_1(table, engine, save):
     """添加公司股东实际控制人到数据库中的actual_controllers表"""
     if table.empty:
         return
@@ -240,10 +241,10 @@ def append_to_actual_controller(table, engine):
                        "证券简称": "股票简称"},
               inplace=True)
     df['股票代码'] = df['股票代码'].map(_to_code)
-    return _to_sql_table(df, '2.1', engine, '股票代码')
+    return _to_sql_table(df, '2.1', engine, '股票代码', save=save)
 
 
-def append_to_company_share_change(table, engine):
+def t_2_2(table, engine, save):
     """公司股本变动"""
     if table.empty:
         return
@@ -255,11 +256,11 @@ def append_to_company_share_change(table, engine):
     df = df.apply(_convert_to_numeric, exclude=(
         '股票代码', '股票简称', '机构名称', '变动原因',))
     # 数量*10000
-    df = df.apply(_fix_num_by, exclude=('变动原因编码','最新记录标识'))
-    return _to_sql_table(df, '2.2', engine, '股票代码')
+    df = df.apply(_fix_num_by, exclude=('变动原因编码', '最新记录标识'))
+    return _to_sql_table(df, '2.2', engine, '股票代码', save=save)
 
 
-def append_to_executives_share_change(table, engine):
+def t_2_3(table, engine, save):
     """上市公司高管持股变动"""
     if table.empty:
         return
@@ -269,10 +270,10 @@ def append_to_executives_share_change(table, engine):
               inplace=True)
     df['股票代码'] = df['股票代码'].map(_to_code)
     df = df.apply(_convert_to_numeric, include=('期末市值(万元)',))
-    return _to_sql_table(df, '2.3', engine, '股票代码')
+    return _to_sql_table(df, '2.3', engine, '股票代码', save=save)
 
 
-def append_to_shareholder_share_change(table, engine):
+def t_2_4(table, engine, save):
     """添加股东增（减）持情况到数据库中的shareholder_share_changes表"""
     if table.empty:
         return
@@ -283,10 +284,10 @@ def append_to_shareholder_share_change(table, engine):
     df['股票代码'] = df['股票代码'].map(_to_code)
     # df['增（减）持截止日'] = pd.to_datetime(df['增（减）持截止日'], 'coerce')
     df = df.apply(_convert_to_numeric, include=('增（减）持价格上限', '变动后占比',))
-    return _to_sql_table(df, '2.4', engine, '股票代码')
+    return _to_sql_table(df, '2.4', engine, '股票代码', save=save)
 
 
-def append_to_shareholding_concentration(table, engine):
+def t_2_5(table, engine, save):
     """持股集中度"""
     if table.empty:
         return
@@ -297,24 +298,24 @@ def append_to_shareholding_concentration(table, engine):
     df['股票代码'] = df['股票代码'].map(_to_code)
     df = df.apply(_convert_to_numeric, include=('Ａ股户数', 'Ｂ股户数', 'Ｈ股户数',
                                                 '股东持股数量', '股东持股比例', '股东持股比例比上报告期增减'))
-    return _to_sql_table(df, '2.5', engine, '股票代码')
+    return _to_sql_table(df, '2.5', engine, '股票代码', save=save)
 
 
-def append_to_quote(table, engine):
+def t_3_1(table, engine, save):
     """添加行情数据到数据库中的quotes表"""
     if table.empty:
         return
     df = table.copy()
     df['股票代码'] = df['股票代码'].str.slice(0, 6)
     df = df.apply(_convert_to_numeric, exclude=(
-        '股票代码','股票简称','交易日期','交易所'
+        '股票代码', '股票简称', '交易日期', '交易所'
 
     ))
     df['涨跌幅'] = df['涨跌幅'] / 100.
-    return _to_sql_table(df, '3.1', engine, '股票代码')
+    return _to_sql_table(df, '3.1', engine, '股票代码', save=save)
 
 
-def append_to_investment_rating(table, engine):
+def t_4_1(table, engine, save):
     """投资评级"""
     if table.empty:
         return
@@ -324,10 +325,10 @@ def append_to_investment_rating(table, engine):
               inplace=True)
     df = df.apply(_convert_to_numeric, include=('目标价格（下限）', '目标价格（上限）'))
     df['股票代码'] = df['股票代码'].map(_to_code)
-    return _to_sql_table(df, '4.1', engine, '股票代码')
+    return _to_sql_table(df, '4.1', engine, '股票代码', save=save)
 
 
-def append_to_performance_forecast(table, engine):
+def t_5_1(table, engine, save):
     """上市公司业绩预告"""
     if table.empty:
         return
@@ -338,10 +339,10 @@ def append_to_performance_forecast(table, engine):
     df['股票代码'] = df['股票代码'].map(_to_code)
     df = df.apply(_convert_to_numeric, include=(
         '本期净利润下限', '本期净利润上限', '本期净利润增减幅下限', '本期净利润增减幅上限'))
-    return _to_sql_table(df, '5.1', engine, '股票代码')
+    return _to_sql_table(df, '5.1', engine, '股票代码', save=save)
 
 
-def append_to_dividend(table, engine, save=True):
+def t_6_1(table, engine, save=True):
     """分红指标"""
     if table.empty:
         return
@@ -359,7 +360,7 @@ def append_to_dividend(table, engine, save=True):
     return _to_sql_table(df, '6.1', engine, '股票代码', save=save)
 
 
-def append_to_additional_stock_plan(table, engine):
+def t_7_1(table, engine, save=True):
     """公司增发股票预案"""
     if table.empty:
         return
@@ -368,10 +369,10 @@ def append_to_additional_stock_plan(table, engine):
                        "证券简称": "股票简称"},
               inplace=True)
     df['股票代码'] = df['股票代码'].map(_to_code)
-    return _to_sql_table(df, '7.1', engine, '股票代码')
+    return _to_sql_table(df, '7.1', engine, '股票代码', save=save)
 
 
-def append_to_additional_stock_implementation(table, engine):
+def t_7_2(table, engine, save=True):
     """公司增发股票实施方案"""
     if table.empty:
         return
@@ -401,10 +402,10 @@ def append_to_additional_stock_implementation(table, engine):
                  '网下申购数量上限', 'A类投资者认购下限', 'B类投资者认购下限',
                  '网上申购数量下限', '发行后每股收益',)
     )
-    return _to_sql_table(df, '7.2', engine, '股票代码')
+    return _to_sql_table(df, '7.2', engine, '股票代码', save=save)
 
 
-def append_to_share_placement_plan(table, engine):
+def t_7_3(table, engine, save=True):
     """公司配股预案"""
     if table.empty:
         return
@@ -417,10 +418,10 @@ def append_to_share_placement_plan(table, engine):
         _convert_to_numeric,
         include=('预计配股价格上限', '预计配股价格下限')
     )
-    return _to_sql_table(df, '7.3', engine, '股票代码')
+    return _to_sql_table(df, '7.3', engine, '股票代码', save=save)
 
 
-def append_to_share_placement_implementation(table, engine):
+def t_7_4(table, engine, save=True):
     """公司配股实施方案"""
     if table.empty:
         return
@@ -435,10 +436,10 @@ def append_to_share_placement_implementation(table, engine):
                  '转配股实配数量', '其他股份实配数量', '可转配股数量', '公众获转配数量',
                  '每股配权转让费',)
     )
-    return _to_sql_table(df, '7.4', engine, '股票代码')
+    return _to_sql_table(df, '7.4', engine, '股票代码', save=save)
 
 
-def append_to_IPO(table, engine):
+def t_7_5(table, engine, save=True):
     """公司首发股票"""
     if table.empty:
         return
@@ -449,27 +450,17 @@ def append_to_IPO(table, engine):
     df['股票代码'] = df['股票代码'].map(_to_code)
     df = df.apply(
         _convert_to_numeric,
-        include=('其中国有股减持数量', '定向募集法人股', '定向募集职工股',
-                 '其他发行数量', '询价上限', '询价下限', '上网发行数量',
-                 '网下配售数量', '回拨数量', '承销余额', '二级市场配售发行中签率',
-                 '网下配售中签率', '超额认购倍数', '网上有效申购户数',
-                 '二级配售有效申购股数', '二级配售有效申购户数', '二级配售有效申购资金',
-                 '网下有效申购股数', '网下有效申购户数', '网下有效申购资金',
-                 '一般法人有效申购股数', '一般法人获配数量', '一般法人获配户数',
-                 '战略投资者有效申购股数', '战略投资者获配数量', '战略投资者获配户数',
-                 '证券基金有效申购数量', '证券基金获配数量', '证券基金获配户数',
-                 '预计发行股数', '网上预设发行数量比例', '网下预设发行数量比例',
-                 '网上申购下限', '网下申购上限', '网下申购下限', '网上预设发行数量',
-                 '网下预设发行数量', '网下超额认购倍数', '战略投资者发行量比例',
-                 '超额配售数量', '初步询价超额认购倍数', '预计新增发行数量上限',
-                 '预计老股东转让数量上限', '预计战略配售数量上限', '战略投资者配售数量',
-                 '老股东转让数量', '发行费用总额2', '老股东转让发行费用', '网下申购剔除比例',
-                 '网下申购剔除价格下限')
+        exclude=('股票代码', '股票简称', '机构名称',
+                 '股票类别编码', '股票类别', '外币币种编码', '外币币种',
+                 '发行定价方式', '发行对象', '发行方式编码', '发行方式',
+                 '承销方式编码', '承销方式', '发行地区',
+                 '发行地区编码', '主要发起人', '分配承诺',
+                 '招股意向书网址', '记录标识')
     )
-    return _to_sql_table(df, '7.5', engine, '股票代码')
+    return _to_sql_table(df, '7.5', engine, '股票代码', save=save)
 
 
-def append_to_ttm_income_statement(table, engine):
+def t_8_1_1(table, engine, save=True):
     """个股TTM财务利润表"""
     if table.empty:
         return
@@ -482,10 +473,10 @@ def append_to_ttm_income_statement(table, engine):
         _convert_to_numeric,
         exclude=('股票代码', '股票简称', '合并类型')
     )
-    return _to_sql_table(df, '8.1.1', engine, '股票代码')
+    return _to_sql_table(df, '8.1.1', engine, '股票代码', save=save)
 
 
-def append_to_ttm_cash_flow_statement(table, engine):
+def t_8_1_2(table, engine, save=True):
     """个股TTM现金流量表"""
     if table.empty:
         return
@@ -498,10 +489,10 @@ def append_to_ttm_cash_flow_statement(table, engine):
         _convert_to_numeric,
         exclude=('股票代码', '股票简称', '合并类型编码', '合并类型',)
     )
-    return _to_sql_table(df, '8.1.2', engine, '股票代码')
+    return _to_sql_table(df, '8.1.2', engine, '股票代码', save=save)
 
 
-def append_to_quarterly_income_statement(table, engine):
+def t_8_2_1(table, engine, save=True):
     """个股单季财务利润表"""
     if table.empty:
         return
@@ -514,10 +505,10 @@ def append_to_quarterly_income_statement(table, engine):
         _convert_to_numeric,
         exclude=('股票代码', '股票简称', '合并类型', )
     )
-    return _to_sql_table(df, '8.2.1', engine, '股票代码')
+    return _to_sql_table(df, '8.2.1', engine, '股票代码', save=save)
 
 
-def append_to_quarterly_cash_flow_statement(table, engine):
+def t_8_2_2(table, engine, save=True):
     """个股单季现金流量表"""
     if table.empty:
         return
@@ -530,10 +521,10 @@ def append_to_quarterly_cash_flow_statement(table, engine):
         _convert_to_numeric,
         exclude=('股票代码', '股票简称', '合并类型', )
     )
-    return _to_sql_table(df, '8.2.2', engine, '股票代码')
+    return _to_sql_table(df, '8.2.2', engine, '股票代码', save=save)
 
 
-def append_to_quarterly_financial_indicator(table, engine):
+def t_8_2_3(table, engine, save=True):
     """个股单季财务指标"""
     if table.empty:
         return
@@ -546,10 +537,10 @@ def append_to_quarterly_financial_indicator(table, engine):
         _convert_to_numeric,
         exclude=('股票代码', '股票简称', '合并类型', )
     )
-    return _to_sql_table(df, '8.2.3', engine, '股票代码')
+    return _to_sql_table(df, '8.2.3', engine, '股票代码', save=save)
 
 
-def append_to_periodly_balance_sheet(table, engine):
+def t_8_3_1(table, engine, save=True):
     """个股报告期资产负债表"""
     if table.empty:
         return
@@ -562,10 +553,10 @@ def append_to_periodly_balance_sheet(table, engine):
         _convert_to_numeric,
         exclude=('股票代码', '股票简称', '机构名称', '合并类型', '报表来源', )
     )
-    return _to_sql_table(df, '8.3.1', engine, '股票代码')
+    return _to_sql_table(df, '8.3.1', engine, '股票代码', save=save)
 
 
-def t_8_3_2(table, engine):
+def t_8_3_2(table, engine, save=True):
     """8.3.2 个股报告期利润表"""
     if table.empty:
         return
@@ -578,10 +569,10 @@ def t_8_3_2(table, engine):
         _convert_to_numeric,
         exclude=('股票代码', '股票简称', '机构名称', '合并类型', '报表来源', '备注')
     )
-    return _to_sql_table(df, '8.3.2', engine, '股票代码')
+    return _to_sql_table(df, '8.3.2', engine, '股票代码', save=save)
 
 
-def append_to_periodly_cash_flow_statement(table, engine):
+def t_8_3_3(table, engine, save=True):
     """个股报告期现金表"""
     if table.empty:
         return
@@ -594,10 +585,10 @@ def append_to_periodly_cash_flow_statement(table, engine):
         _convert_to_numeric,
         exclude=('股票代码', '股票简称', '机构名称', '合并类型', '报表来源', )
     )
-    return _to_sql_table(df, '8.3.3', engine, '股票代码')
+    return _to_sql_table(df, '8.3.3', engine, '股票代码', save=save)
 
 
-def append_to_periodly_balance_sheet_2007(table, engine):
+def t_8_3_4(table, engine, save=True):
     """金融类资产负债表2007版"""
     if table.empty:
         return
@@ -611,10 +602,10 @@ def append_to_periodly_balance_sheet_2007(table, engine):
         _convert_to_numeric,
         exclude=('股票代码', '股票简称', '机构名称', '合并类型', '报表来源', )
     )
-    return _to_sql_table(df, '8.3.4', engine, '股票代码')
+    return _to_sql_table(df, '8.3.4', engine, '股票代码', save=save)
 
 
-def t_8_3_2_2007(table, engine):
+def t_8_3_5(table, engine, save=True):
     """金融类利润表2007版"""
     if table.empty:
         return
@@ -627,10 +618,10 @@ def t_8_3_2_2007(table, engine):
         _convert_to_numeric,
         exclude=('股票代码', '股票简称', '机构名称', '合并类型', '报表来源', )
     )
-    return _to_sql_table(df, '8.3.5', engine, '股票代码')
+    return _to_sql_table(df, '8.3.5', engine, '股票代码', save=save)
 
 
-def append_to_periodly_cash_flow_statement_2007(table, engine):
+def t_8_3_6(table, engine, save=True):
     """金融类现金流量表2007版"""
     if table.empty:
         return
@@ -643,10 +634,10 @@ def append_to_periodly_cash_flow_statement_2007(table, engine):
         _convert_to_numeric,
         exclude=('股票代码', '股票简称', '机构名称', '合并类型', '报表来源', )
     )
-    return _to_sql_table(df, '8.3.6', engine, '股票代码')
+    return _to_sql_table(df, '8.3.6', engine, '股票代码', save=save)
 
 
-def append_to_periodly_financial_indicator(table, engine):
+def t_8_4_1(table, engine, save=True):
     """个股报告期指标表"""
     if table.empty:
         return
@@ -659,10 +650,10 @@ def append_to_periodly_financial_indicator(table, engine):
         _convert_to_numeric,
         exclude=('股票代码', '股票简称', '机构名称', '合并类型', '数据来源',)
     )
-    return _to_sql_table(df, '8.4.1', engine, '股票代码')
+    return _to_sql_table(df, '8.4.1', engine, '股票代码', save=save)
 
 
-def append_to_financial_indicator_ranking(table, engine):
+def t_8_4_2(table, engine, save=True):
     """财务指标行业排名"""
     if table.empty:
         return
@@ -679,73 +670,72 @@ def append_to_financial_indicator_ranking(table, engine):
         else:
             pre = col
 
-    # df['报告期'] = pd.to_datetime(df['报告期'], 'coerce') ? 顺序
     df = df.apply(
         _convert_to_numeric,
         exclude=('股票代码', '股票简称', '报告期', '行业ID', '级别说明', '行业名称',)
     )
-    return _to_sql_table(df, '8.4.2', engine, '股票代码')
+    return _to_sql_table(df, '8.4.2', engine, '股票代码', save=save)
 
 
-def write_to_sql(engine, df, input_item):
+def write_to_sql(engine, df, input_item, save=True):
     """写入指定数据类型的数据框到数据库"""
     item = convert_to_item(input_item, LEVEL_MAPS)
     level = item_to_level(item, LEVEL_MAPS)
     if level == '1.1':
-        return append_to_stock_info(df, engine)
+        return t_1_1(df, engine, save)
     elif level == '2.1':
-        return append_to_actual_controller(df, engine)
+        return t_2_1(df, engine, save)
     elif level == '2.2':
-        return append_to_company_share_change(df, engine)
+        return t_2_2(df, engine, save)
     elif level == '2.3':
-        return append_to_executives_share_change(df, engine)
+        return t_2_3(df, engine, save)
     elif level == '2.4':
-        return append_to_shareholder_share_change(df, engine)
+        return t_2_4(df, engine, save)
     elif level == '2.5':
-        return append_to_shareholding_concentration(df, engine)
+        return t_2_5(df, engine, save)
     elif level == '3.1':
-        return append_to_quote(df, engine)
+        return t_3_1(df, engine, save)
     elif level == '4.1':
-        return append_to_investment_rating(df, engine)
+        return t_4_1(df, engine, save)
     elif level == '5.1':
-        return append_to_performance_forecast(df, engine)
+        return t_5_1(df, engine, save)
     elif level == '6.1':
-        return append_to_dividend(df, engine)
+        return t_6_1(df, engine, save)
     elif level == '7.1':
-        return append_to_additional_stock_plan(df, engine)
+        return t_7_1(df, engine, save)
     elif level == '7.2':
-        return append_to_additional_stock_implementation(df, engine)
+        return t_7_2(df, engine, save)
     elif level == '7.3':
-        return append_to_share_placement_plan(df, engine)
+        return t_7_3(df, engine, save)
     elif level == '7.4':
-        return append_to_share_placement_implementation(df, engine)
+        return t_7_4(df, engine, save)
     elif level == '7.5':
-        return append_to_IPO(df, engine)
+        return t_7_5(df, engine, save)
     elif level == '8.1.1':
-        return append_to_ttm_income_statement(df, engine)
+        return t_8_1_1(df, engine, save)
     elif level == '8.1.2':
-        return append_to_ttm_cash_flow_statement(df, engine)
+        return t_8_1_2(df, engine, save)
     elif level == '8.2.1':
-        return append_to_quarterly_income_statement(df, engine)
+        return t_8_2_1(df, engine, save)
     elif level == '8.2.2':
-        return append_to_quarterly_cash_flow_statement(df, engine)
+        return t_8_2_2(df, engine, save)
     elif level == '8.2.3':
-        return append_to_quarterly_financial_indicator(df, engine)
+        return t_8_2_3(df, engine, save)
     elif level == '8.3.1':
-        return append_to_periodly_balance_sheet(df, engine)
+        return t_8_3_1(df, engine, save)
     elif level == '8.3.2':
-        return t_8_3_2(df, engine)
+        return t_8_3_2(df, engine, save)
     elif level == '8.3.3':
-        return append_to_periodly_cash_flow_statement(df, engine)
+        return t_8_3_3(df, engine, save)
     elif level == '8.3.4':
-        return append_to_periodly_balance_sheet_2007(df, engine)
+        return t_8_3_4(df, engine, save)
     elif level == '8.3.5':
-        return t_8_3_2_2007(df, engine)
+        return t_8_3_5(df, engine, save)
     elif level == '8.3.6':
-        return append_to_periodly_cash_flow_statement_2007(df, engine)
+        return t_8_3_6(df, engine, save)
     elif level == '8.4.1':
-        return append_to_periodly_financial_indicator(df, engine)
+        return t_8_4_1(df, engine, save)
     elif level == '8.4.2':
-        return append_to_financial_indicator_ranking(df, engine)
+        return t_8_4_2(df, engine, save)
     else:
         raise NotImplementedError('无法写入数据项目为“{}”的数据'.format(item))

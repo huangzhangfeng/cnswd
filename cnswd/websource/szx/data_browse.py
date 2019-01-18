@@ -2,9 +2,8 @@
 
 深证信数据搜索API
 
-备注
-    1. 加载代码故障率高，尽量固定使用代码，循环其他选项
-    2. 必须更换代码时，启用较长时间休眠
+**新版**可以一次性加载所有股票代码，但需要注意单次查询的行数不要超限(20000?)。
+
 """
 import re
 import time
@@ -26,7 +25,7 @@ from .base import SZXPage
 from .constants import TIMEOUT, MID_WAIT_SECOND, MIN_WAIT_SECOND
 
 MARKETS = {
-    # '深市A': 1,
+    '深市A': 1,
     '深市B': 2,
     '深主板A': 3,
     '中小板': 4,
@@ -108,16 +107,17 @@ class DataBrowser(SZXPage):
     def __init__(self, clear_cache=False, retry_times=3, **kwds):
         start = time.time()
         super().__init__(clear_cache=clear_cache, retry_times=retry_times, **kwds)
-        check_loaded_css = 'a.active'
+        check_loaded_css = '.dataBrowseBtn'
         self._switch_to(7, check_loaded_css)
         self.logger.notice(f'加载主页用时：{time.time() - start:>0.4f}秒')
         self._loaded = False
+        self._num = 0 # 可选股票代码总数量
 
     def _load_all_code(self, include_b=True):
-        """全选代码后再删除，将所有代码置放在待选区域"""
+        """全选股票代码"""
         if self._loaded:
             return
-        markets = ['沪市A', '深主板A', '中小板', '创业板']
+        markets = ['沪市A', '深市A']
         label_css = 'div.select-box:nth-child(1) > div:nth-child(1) > label:nth-child(1)'
         btn_css = 'div.arrows-box:nth-child(2) > div:nth-child(1) > button:nth-child(1)'
         num_css = 'div.select-box:nth-child(3) > div:nth-child(1) > span:nth-child(2)'
@@ -133,18 +133,9 @@ class DataBrowser(SZXPage):
             btn = self.driver.find_element_by_css_selector(btn_css)
             btn.click()
             num_elem = self.driver.find_element_by_css_selector(num_css)
-            num = ops.get_count(num_elem)
-            self.logger.info(f"加载{market} 累计{num}个代码")
-        ops.remove_choosed_code(self.driver)
+            self._num = ops.get_count(num_elem)
+            self.logger.info(f"加载{market}，累计{self._num}个股票代码。")
         self._loaded = True
-
-    def _add_all_code(self):
-        """全选并添加代码"""
-        self._load_all_code()
-        css = 'div.select-box:nth-child(1) > div:nth-child(1) > label'
-        self.driver.find_element_by_css_selector(css).click()
-        btn_css = 'div.arrows-box:nth-child(2) > div:nth-child(1) > button:nth-child(1)'
-        self.driver.find_element_by_css_selector(btn_css).click()
 
     def _on_pop_alert(self):
         """显示弹出框内容并确认"""
@@ -220,18 +211,6 @@ class DataBrowser(SZXPage):
                 ops.add_code(self.driver, code)
             self.current_code = set(codes)
 
-    # 速度慢，废弃
-    def _select_code(self, code):
-        """选择并添加代码"""
-        css = '.codes-search-left > input:nth-child(1)'
-        input_elem = self.driver.find_element_by_css_selector(css)
-        input_elem.clear()
-        input_elem.send_keys(code)
-        search_css = '.codes-search-left > i:nth-child(2)'
-        self.driver.find_element_by_css_selector(search_css).click()
-        btn = 'div.arrows-box:nth-child(2) > div:nth-child(1) > button:nth-child(1)'
-        self.driver.find_element_by_css_selector(btn).click()
-
     def _change_t1_value(self, t1):
         """更改查询t1值"""
         if self.current_t1_css and (t1 != self.current_t1_value):
@@ -258,46 +237,6 @@ class DataBrowser(SZXPage):
                 select = Select(elem)
                 select.select_by_index(t2 - 1)
                 self.current_t2_value = t2
-
-    @lru_cache()
-    def get_stock_code(self):
-        """获取所有股票代码
-
-        Returns:
-            list -- 股票代码列表
-        """
-        self._add_all_code()
-        css = 'div.select-box:nth-child(3) > div:nth-child(2) > ul:nth-child(1) span'
-        spans = self.driver.find_elements_by_css_selector(css)
-        res = [span.get_attribute('data-id') for span in spans]
-        ops.remove_choosed_code(self.driver)
-        return res
-
-    def get_all_stock_info(self):
-        """获取所有股票基本资料
-        
-        备注：
-            当前不稳定，凌晨时段比较可靠
-        """
-        level = '1.1'
-        self._change_data_item(level)
-        self._add_all_code()
-        df = self._read_html_table()
-        ops.remove_choosed_code(self.driver)
-        return df
-
-    def get_all_stock_ipo(self):
-        """获取所有股票IPO信息
-        
-        备注：
-            当前不稳定，凌晨时段比较可靠
-        """
-        level = '7.5'
-        self._change_data_item(level)
-        self._add_all_code()
-        df = self._read_html_table()
-        ops.remove_choosed_code(self.driver)
-        return df
 
     def query(self, indicator, codes=None, t1=None, t2=None):
         """查询股票期间指标数据
@@ -335,15 +274,17 @@ class DataBrowser(SZXPage):
             raise ValueError('"{}"必须指定"t2"值'.format(indicator))
         self._change_t2_value(t2)
 
+        # 加载全部股票代码
+        # # 维持函数原签名，避免改动
         if codes is not None:
-            # 排序代码
-            codes = sorted(ensure_list(codes))
+            raise ValueError('codes必须为None')
         else:
-            codes = self.get_stock_code()
-        self.logger.info('>    项目：{} 共 {} 只股票({} - {})，期间：{} - {}'.format(
-            indicator, len(codes), codes[0], codes[-1], t1, t2)
+            self._load_all_code()
+
+        self.logger.info('>    项目：{} 共 {} 只股票，期间：{} - {}'.format(
+            indicator, self._num, t1, t2)
         )
-        df = self._query_by_batch_code(codes)
+        df = self._read_html_table()
         return df
 
     def _read_html_table(self):
@@ -359,9 +300,7 @@ class DataBrowser(SZXPage):
         # 一般情况下不会发生，在此前已经将提取单元缩小到必要程度，除非网络问题导致
         # 读取分页信息
         pagination_css = '.pagination-info'
-        # 根本问题在于异步等待，无法确定响应是否加载完成
-        # 对于行情数据，理论上指定期间的数据，也可以完成
-        # 经过实验，单次请求不超过75行，故障率比较低
+        ops.wait_first_loaded(self.wait, pagination_css, '提取页数')
         pagination = self.driver.find_element_by_css_selector(pagination_css)
         try:
             total = int(re.search(PAGINATION_PAT, pagination.text).group(1))
@@ -385,24 +324,6 @@ class DataBrowser(SZXPage):
                 next_page = self.driver.find_element_by_link_text(str(i + 1))
                 next_page.click()
             self.logger.info('>>>  分页进度 第{}页/共{}页'.format(i, self.page_num))
-        return _concat(dfs)
-
-    def _query_by_batch_code(self, codes):
-        """代码分批读取数据"""
-        dfs = []
-        total_num = len(codes)
-        count = 0
-        batch_codes = loop_codes(codes, BATCH_CODE_NUM)
-        msg_fmt = '<<   代码进度 {} / {} 批次数据：{}行({} - {})'
-        for choosed_codes in batch_codes:
-            count += len(choosed_codes)
-            self._change_code(choosed_codes)
-            df = self._read_html_table()
-            self.logger.info(
-                msg_fmt.format(
-                    count, total_num, df.shape[0], choosed_codes[0], choosed_codes[-1])
-            )
-            dfs.append(df)
         return _concat(dfs)
 
     def get_stock_info(self, codes=None):
@@ -805,6 +726,8 @@ class DataBrowser(SZXPage):
         levels = []
         for nth in (1, 2, 3, 4, 5, 6):
             levels.extend(self.get_levels_for(nth))
+        # CDR当前不可用
+        levels = [x for x in levels if x not in ('6.6','6.9')]
         self.logger.info('分类层级数量:{}'.format(len(levels)))
         for l in levels:
             self.logger.info('当前分类层级:{}'.format(l))

@@ -81,26 +81,28 @@ def szx_init():
 
 
 @stock.command()
-@click.option('--rewrite/--no-rewrite', default=False, help='是否重写股票基本信息')
-def szx_stock_info(rewrite):
-    """刷新股票基本信息"""
-    data_browse.update_stock_info(rewrite)
+def szx_classify_bom():
+    """股票分类bom表"""
     data_browse.update_classify_bom()
 
 
 @stock.command()
-@click.option('--rewrite/--no-rewrite', default=False, help='是否重写分类数据')
-@click.option('--times', default=10, help='刷新最多尝试次数')
-def szx_stock_classify(rewrite, times):
-    """刷新股票分类信息"""
-    data_browse.update_stock_classify(rewrite, times)
+@click.option('--rewrite/--no-rewrite', default=False, help='是否重写股票基本信息')
+def szx_stock_info(rewrite):
+    """刷新股票基本信息"""
+    data_browse.update_stock_info(rewrite)
 
 
 @stock.command()
-@click.option('--times', default=3, help='刷新最多尝试次数')
-def szx_bank_data(times):
+def szx_stock_classify():
+    """刷新股票分类信息"""
+    data_browse.update_stock_classify()
+
+
+@stock.command()
+def szx_bank_data():
     """刷新金融业专项财务数据"""
-    data_browse.refresh_bank_data(times)
+    data_browse.refresh_bank_data()
 
 
 @stock.command()
@@ -116,6 +118,14 @@ def szx_daily():
     """每日刷新数据"""
     thematic_statistics.refresh()
     data_browse.daily_refresh()
+
+
+@stock.command()
+def szx_weekly_basic():
+    """每周刷新基础信息"""
+    data_browse.update_stock_info(True)
+    data_browse.update_classify_bom()
+    data_browse.update_stock_classify()
 
 
 @stock.command()

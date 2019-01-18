@@ -134,14 +134,23 @@ class SZXPage(object):
                     break
 
         def change_view_row_num():
-            self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            # self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            # css_1 = '.dropdown-toggle'
+            # self.driver.find_element_by_css_selector(css_1).click()
+            # css_2 = '.dropdown-menu > li:nth-child({})'.format(nth)
+            # self.driver.find_element_by_css_selector(css_2).click()
+
             css_1 = '.dropdown-toggle'
             self.driver.find_element_by_css_selector(css_1).click()
-            css_2 = '.dropdown-menu > li:nth-child({})'.format(nth)
-            self.driver.find_element_by_css_selector(css_2).click()
+            css_2 = '.btn-group > ul:nth-child(2) > li'
+            # 选择最后一个li元素的子元素a点击
+            lis = self.driver.find_elements_by_css_selector(css_2)
+            lis[nth-1].find_element_by_tag_name('a').click()          
+
 
         # 只有总行数大于最小行数，才有必要调整显示行数
         if total > min_row_num:
+            # self.driver.save_screenshot('before.png')
             change_view_row_num()
         page_num = math.ceil(total / per_page)
         # 记录页数
