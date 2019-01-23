@@ -4,19 +4,21 @@
 
 """
 import math
-import time
 import os
+
 import logbook
 import pandas as pd
 from logbook.more import ColorizedStderrHandler
 from selenium.common.exceptions import ElementNotInteractableException
+from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select, WebDriverWait
 
 from . import ops
 from .._selenium import make_headless_browser
 from ._firefox import clear_firefox_cache
-from .constants import TIMEOUT,TIMEOUT_2
+from .constants import TIMEOUT
 
 HOME_URL_FMT = 'http://webapi.cninfo.com.cn/#/{}'
 
@@ -44,20 +46,17 @@ class SZXPage(object):
     view_selection = {1: 10, 2: 20, 3: 50}
     page_num = 0
     level_maps = {}
-    retry_times = 1
 
-    def __init__(self, clear_cache, retry_times, **kwds):
+    def __init__(self, clear_cache, **kwds):
         self.driver = make_headless_browser()
         self.logger = logbook.Logger("深证信")
         # 由于经常会遭遇到未知故障，需要清理缓存，提高成功加载的概率
         if clear_cache:
             clear_firefox_cache(self.driver)
+            self.logger.notice("清理缓存")
         # 通用部分
         self.wait = WebDriverWait(
             self.driver, TIMEOUT, poll_frequency=POLL_FREQUENCY)
-        self.wait_2 = WebDriverWait(
-            self.driver, TIMEOUT_2, poll_frequency=POLL_FREQUENCY)
-        self.retry_times = retry_times
         super().__init__(**kwds)
 
     def __enter__(self):
@@ -77,7 +76,7 @@ class SZXPage(object):
         ht = API_MAPS[num][1]
         self.logger.info(f'{API_MAPS[num][0]}')
         self._load_page(ht)
-        # 确保元素可见
+        # 特定元素不可见，完成首次页面加载
         ops.wait_first_loaded(
             self.wait, check_loaded_css, API_MAPS[num][0])
 
@@ -100,16 +99,30 @@ class SZXPage(object):
         raise NotImplementedError('必须在子类完成与数据项目相关的设定')
 
     # ===============通用设置=============== #
-    def _change_year(self, css_id, year):
+    # def _change_year(self, css_id, year):
+    #     """改变查询指定id元素的年份"""
+    #     js = 'document.getElementById("{}").value="{}";'.format(css_id, year)
+    #     self.driver.execute_script(js)
+    #     self.driver.implicitly_wait(0.1)
+    #     self.driver.save_screenshot(f"{year}.png")
+
+    def _change_year(self, css, year):
         """改变查询指定id元素的年份"""
-        js = 'document.getElementById("{}").value="{}";'.format(css_id, year)
-        self.driver.execute_script(js)
+        elem = self.driver.find_element_by_css_selector(css)
+        elem.clear()
+        elem.send_keys(str(year))
 
     def _change_date(self, css, date_str):
         """设置日期"""
         elem = self.driver.find_element_by_css_selector(css)
         elem.clear()
         # 自动补全
+        elem.send_keys(date_str, Keys.TAB)
+
+    def _datepicker(self, css, date_str):
+        """指定日期"""
+        elem = self.driver.find_element_by_css_selector(css)
+        elem.clear()
         elem.send_keys(date_str, Keys.TAB)
 
     def _auto_change_view_row_num(self, total):
@@ -134,26 +147,26 @@ class SZXPage(object):
                     nth = k
                     per_page = v
                     break
+        # self.logger.notice(f'当前选项{nth}, 每页行数{per_page}')
 
         def change_view_row_num():
             # self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            # css_1 = '.dropdown-toggle'
-            # self.driver.find_element_by_css_selector(css_1).click()
-            # css_2 = '.dropdown-menu > li:nth-child({})'.format(nth)
-            # self.driver.find_element_by_css_selector(css_2).click()
-
             css_1 = '.dropdown-toggle'
             self.driver.find_element_by_css_selector(css_1).click()
+            # self.driver.implicitly_wait(0.3)
             css_2 = '.btn-group > ul:nth-child(2) > li'
-            # 选择最后一个li元素的子元素a点击
             lis = self.driver.find_elements_by_css_selector(css_2)
-            lis[nth-1].find_element_by_tag_name('a').click()          
-
+            try:
+                lis[nth-1].find_element_by_tag_name('a').click()
+            except ElementNotInteractableException:
+                self.driver.implicitly_wait(1)
+                lis[nth-1].find_element_by_tag_name('a').click()
 
         # 只有总行数大于最小行数，才有必要调整显示行数
         if total > min_row_num:
             # self.driver.save_screenshot('before.png')
             change_view_row_num()
+
         page_num = math.ceil(total / per_page)
         # 记录页数
         self.page_num = page_num

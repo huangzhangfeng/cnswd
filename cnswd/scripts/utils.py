@@ -16,6 +16,7 @@ from cnswd.sql.base import db_path, get_engine
 from cnswd.sql.info import Base as InfoBase
 from cnswd.sql.szsh import Base as szshBase
 from cnswd.sql.szx import Base as SZXBase
+from cnswd.sql.ts import Base as TSBase
 from cnswd.utils import data_root
 
 
@@ -38,6 +39,8 @@ def create_tables(db_dir_name=DB_DIR_NAME, rewrite=False):
         BackupBase.metadata.create_all(engine)
     elif db_dir_name.startswith('szsh'):
         szshBase.metadata.create_all(engine)
+    elif db_dir_name.startswith('ts'):
+        TSBase.metadata.create_all(engine)
     else:
         raise ValueError(f'不支持{db_dir_name}')
 

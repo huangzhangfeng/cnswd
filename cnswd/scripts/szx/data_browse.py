@@ -30,8 +30,8 @@ logger = logbook.Logger('深证信')
 db_dir_name = 'szx'
 START_CHECK = (pd.Timestamp('today') - pd.Timedelta(days=30)).date()
 B_2007_LEVELS = ('8.3.4', '8.3.5', '8.3.6')
-DELAYS = {'3.1': 7}
-START_MAPS = {'3.1': MARKET_START.tz_localize(None)}
+DELAYS = {'2.1': 1, '3.1': 7}
+default_start_date = MARKET_START.tz_localize(None)
 
 
 def default_ordered_levels():
@@ -219,14 +219,14 @@ def _insert(df, level):
     class_ = MODEL_MAPS[level]
     table = class_.__tablename__
     cols = df.columns
-    d_name = DATE_MAPS[level]
+    d_name = DATE_MAPS[level][0]
     for code, s in df.iterrows():
         obj = class_()
         d = s[d_name].strftime(r'%Y-%m-%d')
         obj.股票代码 = code
         for col in cols:
             v = s[col]
-            if pd.isna(v) or pd.isnull(v):
+            if pd.isna(v) or pd.isnull(v) or v == '-':
                 continue
             setattr(obj, col, v)
         session.add(obj)
@@ -239,31 +239,36 @@ def _insert(df, level):
 
 
 def _get_d_start_date(level):
-    """日线数据开始刷新时间"""
+    """
+    日线数据开始刷新时间
+    """
     session = get_session(db_dir_name)
     class_ = MODEL_MAPS[level]
-    delay = DELAYS[level]
-    if level in ('3.1',):
-        expr = class_.交易日期
+    if level == '3.1':
+        delay = -7
+    elif level.startswith('8.'):
+        delay = 0
+    else:
+        delay = 1
+    expr = getattr(class_, DATE_MAPS[level][0])
     t_end_date = session.query(func.max(expr)).scalar()
     if t_end_date is None:
-        return START_MAPS[level]
+        return default_start_date
     else:
-        # 自前溯delay天开始
-        return t_end_date - pd.Timedelta(days=delay)
+        # 调整天数
+        return t_end_date + pd.Timedelta(days=delay)
 
 
-def _refresh_stock_data(level):
+def _refresh_stock_data(api, level):
     """刷新股票数据"""
     engine = get_engine(db_dir_name)
-    with DataBrowser(True) as api:
-        # 使暂停上市、退市股票开始日期无效
-        start = _get_d_start_date(level)
-        df = api.get_data(level, start=start)
-        if level == '4.1' and (not df.empty):
-            # 去掉研究员为空的记录(年份久远的数据可能存在，不影响)
-            df = df.loc[df['研究员名称'].str.len() > 0, :]
-        df = write_to_sql(engine, df, level, save=False)
+    start = _get_d_start_date(level)
+    df = api.get_data(level, start=start)
+    if level == '4.1' and (not df.empty):
+        # 去掉研究员为空的记录(年份久远的数据可能存在，不影响)
+        df = df.loc[df['研究员名称'].str.len() > 0, :]
+    df = write_to_sql(engine, df, level, save=False)
+    if df is not None:
         _insert(df, level)
 
 
@@ -286,14 +291,15 @@ def refresh_stock_data(levels):
     valid_level(levels)
     if '3.1' in levels:
         delete_incomplete_quotes()
-    for level in levels:
-        _refresh_stock_data(level)
+    with DataBrowser(True) as api:
+        for level in levels:
+            _refresh_stock_data(api, level)
 
 
 def daily_refresh():
     """每日刷新数据"""
     update_stock_info(False)
-    refresh_stock_data('3.1', 30)
+    refresh_stock_data('3.1')
 
 
 def weekly_refresh():
@@ -301,7 +307,7 @@ def weekly_refresh():
     update_stock_classify()
     levels = ['2.1', '2.2', '2.3', '2.4', '4.1',
               '5.1', '7.1', '7.2', '7.3', '7.4']
-    refresh_stock_data(levels, 30)
+    refresh_stock_data(levels)
 
 
 def monthly_refresh():
@@ -315,7 +321,7 @@ def quarterly_refresh():
     levels = ['2.5', '5.1', '8.1.1', '8.1.2', '8.2.1',
               '8.2.2', '8.2.3', '8.3.1', '8.3.2', '8.3.3',
               '8.4.1', '8.4.2']
-    refresh_stock_data(levels, 30)
+    refresh_stock_data(levels)
 
 
 def update_stock_classify():
@@ -374,4 +380,4 @@ def init_szx():
     refresh_bank_data()
     # 除股票基本资料、IPO及金融行业外的数据项目
     levels = [x for x in DATE_MAPS.keys() if x not in B_2007_LEVELS]
-    refresh_stock_data(levels, times=30)
+    refresh_stock_data(levels)

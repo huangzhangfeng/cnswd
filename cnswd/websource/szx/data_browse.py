@@ -105,12 +105,13 @@ class DataBrowser(SZXPage):
     current_t2_value = ''      # 结束日期
     level_maps = LEVEL_MAPS
 
-    def __init__(self, clear_cache=False, retry_times=3, **kwds):
+    def __init__(self, clear_cache=False, **kwds):
         start = time.time()
-        super().__init__(clear_cache=clear_cache, retry_times=retry_times, **kwds)
-        check_loaded_css = '.dataBrowseBtn'
+        super().__init__(clear_cache=clear_cache, **kwds)
+        check_loaded_css = '#apiName'
         self._switch_to(7, check_loaded_css)
-        self.logger.notice(f'加载主页用时：{time.time() - start:>0.4f}秒')
+        self.driver.implicitly_wait(1) # 等待
+        self.logger.notice(f'加载主页用时：{(time.time() - start):>0.4f}秒')
         self._loaded = False
         self._num = 0 # 可选股票代码总数量
 
@@ -148,7 +149,7 @@ class DataBrowser(SZXPage):
     def _select_level(self, level):
         """选定数据项目"""
         assert level in self.level_maps.keys(), f'数据搜索指标导航可接受范围：{self.level_maps}'
-        ops.select_level(self.driver, self.root_nav_css, level, True)
+        ops.select_level(self, self.root_nav_css, level, True)
 
     def _data_item_related(self, level):
         self._choose_data_fields()
@@ -178,11 +179,11 @@ class DataBrowser(SZXPage):
         if market != self.current_market:
             level = '6.{}'.format(MARKETS[market])
             try:
-                ops.select_level(self.driver, root_css, level)
+                ops.select_level(self, root_css, level)
             except UnexpectedAlertPresentException as e:
                 self.logger.error(f'{e!r}')
-                time.sleep(MID_WAIT_SECOND)
-                ops.select_level(self.driver, root_css, level)
+                self.driver.implicitly_wait(MID_WAIT_SECOND)
+                ops.select_level(self, root_css, level)
             try:
                 # 使用隐式等待
                 css = 'div.select-box:nth-child(1) > div:nth-child(3) li'
@@ -216,21 +217,22 @@ class DataBrowser(SZXPage):
         """更改查询t1值"""
         if self.current_t1_css and (t1 != self.current_t1_value):
             ## 输入日期字符串时
-            if self.current_t1_css.startswith('input'):
-                self._change_date(self.current_t1_css, t1)
+            if 'input' in self.current_t1_css:
+                self._datepicker(self.current_t1_css, t1)
                 self.current_t1_value = t1
-            if self.current_t1_css in ('#se1_sele', '#se2_sele'):
-                css_id = self.current_t1_css[1:4]
-                self._change_year(css_id, t1)
+            elif self.current_t1_css in ('#se1_sele', '#se2_sele'):
+                # css_id = self.current_t1_css[1:4]
+                # self._change_year(css_id, t1)
+                self._change_year(self.current_t1_css, t1)
                 self.current_t1_value = t1
 
     def _change_t2_value(self, t2):
         """更改查询t2值"""
         if self.current_t2_css and (t2 != self.current_t2_value):
-            if self.current_t2_css.startswith('input'):
-                self._change_date(self.current_t2_css, t2)
+            if 'input' in self.current_t2_css:
+                self._datepicker(self.current_t2_css, t2)
                 self.current_t2_value = t2
-            if self.current_t2_css.startswith('.condition2'):
+            elif self.current_t2_css.startswith('.condition2'):
                 elem = self.driver.find_element_by_css_selector(
                     self.current_t2_css)
                 t2 = int(t2)
@@ -290,18 +292,14 @@ class DataBrowser(SZXPage):
 
     def _read_html_table(self):
         """读取当前网页数据表"""
-        status = ops.wait_responsive_table_loaded(
-            self, '.dataBrowseBtn', self.retry_times)
+        status = ops.wait_responsive_table_loaded(self, '.dataBrowseBtn')
         if status == ops.ResponseStatus.nodata:
             return pd.DataFrame()
-        # elif status == ops.ResponseStatus.failed:
-        #     tip = (self.current_level, self.current_code, self.current_t1_value, self.current_t2_value)
-        #     raise ops.RetryException(f'<id={id(self)}> {tip} 加载失败，请重试')
-        # 排除无数据或者延时(数据量大导致加载延时)情形，以下部分至少有一页数据
-        # 一般情况下不会发生，在此前已经将提取单元缩小到必要程度，除非网络问题导致
+        if self.current_level == '3.1':
+            self.driver.implicitly_wait(3)
         # 读取分页信息
         pagination_css = '.pagination-info'
-        ops.wait_first_loaded(self.wait, pagination_css, '提取页数')
+        ops.wait_first_loaded(self.wait, '.fixed-table-footer', '提取页数')
         pagination = self.driver.find_element_by_css_selector(pagination_css)
         try:
             total = int(re.search(PAGINATION_PAT, pagination.text).group(1))
@@ -317,8 +315,9 @@ class DataBrowser(SZXPage):
         # 调整显示行数
         self._auto_change_view_row_num(total)
         dfs = []
+        na_values = ['-','无']
         for i in range(1, self.page_num + 1):
-            df = pd.read_html(self.driver.page_source)[0]
+            df = pd.read_html(self.driver.page_source, na_values=na_values)[0]
             dfs.append(df)
             # 点击进入下一页
             if i + 1 <= self.page_num:
@@ -333,23 +332,47 @@ class DataBrowser(SZXPage):
 
     def get_actual_controller(self, codes=None, start=None, end=None):
         """获取公司股东实际控制人(2.1)"""
-        start, end = sanitize_dates(start, end)
-        return self.query('公司股东实际控制人', codes, start.strftime(r'%Y-%m-%d'), end.strftime(r'%Y-%m-%d'))
+        ps = loop_period_by(start, end, 'Y', False)
+        dfs = []
+        # 按年循环
+        for s, e in ps:
+            df = self.query('公司股东实际控制人', codes, s.strftime(
+                r'%Y-%m-%d'), e.strftime(r'%Y-%m-%d'))
+            dfs.append(df)
+        return _concat(dfs)
 
     def get_company_share_change(self, codes=None, start=None, end=None):
         """获取公司股本变动(2.2)"""
-        start, end = sanitize_dates(start, end)
-        return self.query('公司股本变动', codes, start.strftime(r'%Y-%m-%d'), end.strftime(r'%Y-%m-%d'))
+        ps = loop_period_by(start, end, 'Q', False)
+        dfs = []
+        # 按年循环
+        for s, e in ps:
+            df = self.query('公司股本变动', codes, s.strftime(
+                r'%Y-%m-%d'), e.strftime(r'%Y-%m-%d'))
+            dfs.append(df)
+        return _concat(dfs)
 
     def get_executives_share_change(self, codes=None, start=None, end=None):
         """获取上市公司高管持股变动(2.3)"""
-        start, end = sanitize_dates(start, end)
-        return self.query('上市公司高管持股变动', codes, start.strftime(r'%Y-%m-%d'), end.strftime(r'%Y-%m-%d'))
+        ps = loop_period_by(start, end, 'M', False)
+        dfs = []
+        # 按月循环
+        for s, e in ps:
+            df = self.query('上市公司高管持股变动', codes, s.strftime(
+                r'%Y-%m-%d'), e.strftime(r'%Y-%m-%d'))
+            dfs.append(df)
+        return _concat(dfs)
 
     def get_shareholder_share_change(self, codes=None, start=None, end=None):
         """获取股东增（减）持情况（2.4）"""
-        start, end = sanitize_dates(start, end)
-        return self.query('股东增（减）持情况', codes, start.strftime(r'%Y-%m-%d'), end.strftime(r'%Y-%m-%d'))
+        ps = loop_period_by(start, end, 'Q', False)
+        dfs = []
+        # 按年循环
+        for s, e in ps:
+            df = self.query('股东增（减）持情况', codes, s.strftime(
+                r'%Y-%m-%d'), e.strftime(r'%Y-%m-%d'))
+            dfs.append(df)
+        return _concat(dfs)
 
     def get_shareholding_concentration(self, codes=None, start=None, end=None):
         """获取持股集中度（2.5）"""
@@ -365,7 +388,7 @@ class DataBrowser(SZXPage):
         """获取行情数据(3.1)"""
         if loop_ps:
             dfs = []
-            ps = loop_period_by(start, end, 'W', False)
+            ps = loop_period_by(start, end, 'B', False)
             # 按周循环
             for s, e in ps:
                 df = self.query('行情数据', codes, s.strftime(
@@ -383,9 +406,9 @@ class DataBrowser(SZXPage):
 
     def get_investment_rating(self, codes=None, start=None, end=None):
         """获取投资评级数据(4.1)"""
-        ps = loop_period_by(start, end, 'Y', False)
+        ps = loop_period_by(start, end, 'M', False)
         dfs = []
-        # 按年循环
+        # 按月循环
         for s, e in ps:
             df = self.query('投资评级', codes, s.strftime(
                 r'%Y-%m-%d'), e.strftime(r'%Y-%m-%d'))

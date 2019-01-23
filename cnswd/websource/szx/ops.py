@@ -79,22 +79,25 @@ def _gen_sub_css(root_css, level):
         yield css
 
 
-def select_level(driver, root_css, level, close_parent=False):
+def select_level(api, root_css, level, close_parent=False):
     """选中层级所对应的元素"""
-    root_nav = driver.find_element_by_css_selector(root_css)
+    # api.driver.execute_script("window.scrollTo(0, 0);")
+    # m = EC.visibility_of_element_located((By.CSS_SELECTOR, root_css))
+    # api.wait.until(m, message='选择项目')
+    root_nav = api.driver.find_element_by_css_selector(root_css)
     tag_name = root_nav.tag_name
     assert tag_name in ('div', 'li'), '根元素必须为"div"或"li"'
     for css in _gen_sub_css(root_css, level):
-        elem = driver.find_element_by_css_selector(css)
+        elem = api.driver.find_element_by_css_selector(css)
         toggler_open(elem)
     attr = elem.get_attribute('class')
     if 'tree-empty' in attr:
-        time.sleep(TINY_WAIT_SECOND)
+        api.driver.implicitly_wait(TINY_WAIT_SECOND)
         elem.find_element_by_tag_name('a').click()
     # 如果关闭根导航
     if close_parent:
         p_css = next(_gen_sub_css(root_css, level))
-        p_elem = driver.find_element_by_css_selector(p_css)
+        p_elem = api.driver.find_element_by_css_selector(p_css)
         toggler_close(p_elem)
     return elem
 
@@ -217,11 +220,11 @@ def get_classify_table(api, level):
         level {str} -- 分类层级，如`1.2`,`2.4.11`
     """
     root_css = '.detail-cont-tree'
-    li = select_level(api.driver, root_css, level, False)
+    li = select_level(api, root_css, level, False)
     tag_name = 'a'
     css = 'div.select-box:nth-child(1) > div:nth-child(3) > ul:nth-child(1) li'
     try:
-        api.wait_2.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, css)))
+        api.wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, css)))
     except TimeoutException:
         api.logger.notice(f"{level} 无数据")
     # 必须在等待后，才提取待选数。若非如此，提取的是上一次的待选数量。导致后续误判。
@@ -324,19 +327,17 @@ def _data_browse(api, css):
         m = EC.invisibility_of_element_located(locator)
         api.wait.until(m, message='查询数据超时')
         # 延迟等待后续完成
-        time.sleep(0.2)
+        api.driver.implicitly_wait(0.2)
     except Exception as e:
         api.logger.error(f'{e!r}')
 
 
-def wait_responsive_table_loaded(api, css, times):
+def wait_responsive_table_loaded(api, css):
     """等待响应数据完成加载"""
-    for _ in range(times):
-        _data_browse(api, css)
-        status = get_response_status(api.driver)
-        if status != ResponseStatus.retry:
-            return status
-        time.sleep(1)
+    _data_browse(api, css)
+    status = get_response_status(api.driver)
+    if status != ResponseStatus.retry:
+        return status
     return ResponseStatus.failed
 
 

@@ -238,7 +238,7 @@ class PerformanceForecaste(Base):
                   primary_key=True, nullable=False, index=True)
     股票简称 = Column(String(10))
     公告日期 = Column(DateTime, primary_key=True, nullable=False, index=True)
-    报告年度 = Column(Text, primary_key=True, nullable=False)
+    报告年度 = Column(DateTime, primary_key=True, nullable=False)
     业绩类型编码 = Column(BigInteger)
     业绩类型 = Column(Text)
     业绩预告内容 = Column(Text)

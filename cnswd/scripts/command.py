@@ -34,6 +34,7 @@ from .szsh.ths_gn import update_gn_list
 from .szsh.trading_calendar import update_trading_calendars
 from .szsh.treasury import refresh_treasury
 from .szx import data_browse, thematic_statistics
+from .ts.core import refresh as ts_refresh
 from .utils import create_tables, remove_temp_files
 
 logbook.set_datetime_format('local')
@@ -58,7 +59,7 @@ def stock():
 
 
 @stock.command()
-@click.option('--db_dir_name', type=click.Choice(['szx', 'info', 'szsh']), help='数据库目录名称')
+@click.option('--db_dir_name', type=click.Choice(['szx', 'info', 'szsh', 'ts']), help='数据库目录名称')
 @click.option('--rewrite/--no-rewrite', default=False, help='是否重写数据库')
 def create(db_dir_name, rewrite):
     """创建数据表"""
@@ -76,7 +77,17 @@ def remove():
     remove_temp_files()
 
 
+# ====================专题统计数据库==================== #
+
+@stock.command()
+@click.argument('levels', nargs=-1)
+def ts_data(levels):
+    """刷新股票数据"""
+    ts_refresh(levels)
+
 # ====================SZX数据库==================== #
+
+
 @stock.command()
 def szx_init():
     """初始化SZX数据库"""
