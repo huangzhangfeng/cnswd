@@ -216,10 +216,12 @@ class Raise(Base):
 class Placement(Base):
     """配股筹资 11.3"""
     __tablename__ = 'placement'
+    __table_args__ = {'sqlite_autoincrement': True}
 
-    证券代码 = Column(Text, primary_key=True, nullable=False)
+    序号 = Column(Integer, primary_key=True)
+    证券代码 = Column(Text, nullable=False)
     证券简称 = Column(Text)
-    配股日期 = Column(DateTime, primary_key=True, nullable=False)
+    配股日期 = Column(DateTime, nullable=False)
     实际配股数量 = Column(BigInteger)
     实际募资总额 = Column(Float)
 
