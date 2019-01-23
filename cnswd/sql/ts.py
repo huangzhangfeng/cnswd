@@ -104,6 +104,7 @@ class ExecutiveShareholdings(Base):
     """高管持股变动明细 5.3"""
     __tablename__ = 'executive_shareholdings'
     __table_args__ = {'sqlite_autoincrement': True}
+
     序号 = Column(Integer, primary_key=True)
     证券代码 = Column(Text, nullable=False, index=True)
     证券简称 = Column(Text)
@@ -200,11 +201,13 @@ class Bond(Base):
 class Raise(Base):
     """增发筹资 11.2"""
     __tablename__ = 'raise'
+    __table_args__ = {'sqlite_autoincrement': True}
 
-    证券代码 = Column(Text, primary_key=True, nullable=False)
+    序号 = Column(Integer, primary_key=True)
+    证券代码 = Column(Text, nullable=False)
     证券简称 = Column(Text)
-    发行日期 = Column(DateTime, primary_key=True, nullable=False)
-    公告日期 = Column(DateTime, primary_key=True, nullable=False)
+    发行日期 = Column(DateTime, nullable=False)
+    公告日期 = Column(DateTime, nullable=False)
     总发行数量 = Column(Float)
     实际募资总额 = Column(Float)
     发行方式 = Column(Text)

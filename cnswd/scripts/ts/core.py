@@ -3,6 +3,7 @@ import time
 import logbook
 import pandas as pd
 from selenium.common.exceptions import (ElementNotInteractableException,
+                                        TimeoutException,
                                         NoSuchElementException)
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
@@ -116,11 +117,11 @@ def refresh(levles=None):
         for level in to_do:
             if done.get(level):
                 continue
+            api.logger.notice(f'第{i+1}次尝试：{LEVEL_MAPS[level][0]}')
             try:
-                api.logger.notice(f'第{i+1}次尝试：{LEVEL_MAPS[level][0]}')
                 _refresh(api, level)
                 done[level] = True
-            except (IntegrityError, ElementNotInteractableException, NoSuchElementException) as e:
+            except (IntegrityError, ElementNotInteractableException, NoSuchElementException, TimeoutException) as e:
                 api.logger.notice(f'{LEVEL_MAPS[level][0]} \n {e!r}')
                 done[level] = False
                 api.driver.quit()

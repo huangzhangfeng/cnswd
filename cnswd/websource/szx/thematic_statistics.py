@@ -47,7 +47,7 @@ LEVEL_MAPS = {
     '9.3':     ('股东大会议案表', '#dBDatepair > input:nth-child(1)', 'input.date:nth-child(2)', None, 2.0),
     '10.1':    ('停复牌', '#dBDatepair > input:nth-child(1)', 'input.date:nth-child(2)', None, 0.2),
     '10.2':    ('市场公开信息汇总', '#fBDatepair > input:nth-child(1)', None, None, 1.0),
-    '11.1':    ('公司债或可转债', '#dBDatepair > input:nth-child(1)', 'input.date:nth-child(2)', '.condition6 > select:nth-child(2)', 0.5),
+    '11.1':    ('公司债或可转债', '#dBDatepair > input:nth-child(1)', 'input.date:nth-child(2)', '.condition6 > select:nth-child(2)', 1.0),
     '11.2':    ('增发筹资', '#dBDatepair > input:nth-child(1)', 'input.date:nth-child(2)', None, 0.5),
     '11.3':    ('配股筹资', '#dBDatepair > input:nth-child(1)', 'input.date:nth-child(2)', None, 0.5),
     '11.4':    ('首发筹资', '#dBDatepair > input:nth-child(1)', 'input.date:nth-child(2)', None, 0.5),
