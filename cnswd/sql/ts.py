@@ -247,6 +247,7 @@ class Proposed(Base):
     """拟上市公司清单 12.1"""
     __tablename__ = 'proposed'
     __table_args__ = {'sqlite_autoincrement': True}
+    
     序号 = Column(Integer, primary_key=True)
     公司名称 = Column(Text, nullable=False)
     证券发行日期 = Column(DateTime, nullable=False)
@@ -258,6 +259,7 @@ class Suspend(Base):
     """暂停上市公司清单 12.2"""
     __tablename__ = 'suspend'
     __table_args__ = {'sqlite_autoincrement': True}
+
     序号 = Column(Integer, primary_key=True)
     上市代码 = Column(Text, nullable=False)
     上市简称 = Column(Text)
@@ -269,6 +271,7 @@ class Delisted(Base):
     """终止上市公司清单 12.3"""
     __tablename__ = 'delisted'
     __table_args__ = {'sqlite_autoincrement': True}
+
     序号 = Column(Integer, primary_key=True)
     上市代码 = Column(Text, nullable=False)
     上市简称 = Column(Text)
@@ -282,6 +285,7 @@ class IPOAudit(Base):
     """首发审核 13.1"""
     __tablename__ = 'ipo_audit'
     __table_args__ = {'sqlite_autoincrement': True}
+
     序号 = Column(Integer, primary_key=True)
     机构名称 = Column(Text)
     公告日期 = Column(DateTime)
@@ -301,10 +305,12 @@ class IPOAudit(Base):
 class Reorganization(Base):
     """资产重组 13.2"""
     __tablename__ = 'reorganization'
+    __table_args__ = {'sqlite_autoincrement': True}
 
-    证券代码 = Column(Text, primary_key=True, nullable=False)
+    序号 = Column(Integer, primary_key=True)
+    证券代码 = Column(Text, nullable=False)
     证券简称 = Column(Text)
-    公告日期 = Column(DateTime, primary_key=True, nullable=False)
+    公告日期 = Column(DateTime, nullable=False)
     重组方式 = Column(Text)
     重组内容 = Column(Text)
     是否涉及主营业务变更 = Column(Text)
@@ -317,11 +323,13 @@ class Reorganization(Base):
 class DebtRestructuring(Base):
     """债务重组 13.3"""
     __tablename__ = 'debt_restructuring'
+    __table_args__ = {'sqlite_autoincrement': True}
 
-    证券代码 = Column(Text, primary_key=True, nullable=False)
+    序号 = Column(Integer, primary_key=True)
+    证券代码 = Column(Text, nullable=False)
     证券简称 = Column(Text)
-    公告日期 = Column(DateTime, primary_key=True, nullable=False)
-    债务人 = Column(Text, primary_key=True, nullable=False)
+    公告日期 = Column(DateTime, nullable=False)
+    债务人 = Column(Text, nullable=False)
     债权人 = Column(Text)
     重组金额 = Column(BigInteger)
     进展状态 = Column(Text)
@@ -330,11 +338,13 @@ class DebtRestructuring(Base):
 class Merger(Base):
     """吸收合并 13.4"""
     __tablename__ = 'merger'
+    __table_args__ = {'sqlite_autoincrement': True}
 
-    证券代码 = Column(Text, primary_key=True, nullable=False)
+    序号 = Column(Integer, primary_key=True)
+    证券代码 = Column(Text, nullable=False)
     证券简称 = Column(Text)
-    公告日期 = Column(DateTime, primary_key=True, nullable=False)
-    被合并方 = Column(Text, primary_key=True, nullable=False)
+    公告日期 = Column(DateTime, nullable=False)
+    被合并方 = Column(Text, nullable=False)
     资产评估基准日 = Column(DateTime)
     是否关联交易 = Column(Text)
     对公司经营的影响 = Column(Text)
@@ -348,9 +358,9 @@ class ShareVariation(Base):
     __table_args__ = {'sqlite_autoincrement': True}
 
     序号 = Column(Integer, primary_key=True)
-    证券代码 = Column(Text)
+    证券代码 = Column(Text, nullable=False)
     证券简称 = Column(Text)
-    公告日期 = Column(DateTime)
+    公告日期 = Column(DateTime, nullable=False)
     出让方名称 = Column(Text)
     受让方名称 = Column(Text)
     股权转让方式 = Column(Text)
@@ -364,10 +374,12 @@ class ShareVariation(Base):
 class Litigation(Base):
     """公司诉讼 13.6"""
     __tablename__ = 'litigation'
+    __table_args__ = {'sqlite_autoincrement': True}
 
-    证券代码 = Column(Text, primary_key=True, nullable=False)
+    序号 = Column(Integer, primary_key=True)
+    证券代码 = Column(Text, nullable=False)
     证券简称 = Column(Text)
-    公告日期 = Column(DateTime, primary_key=True, nullable=False)
+    公告日期 = Column(DateTime, nullable=False)
     涉讼次数 = Column(BigInteger)
     涉讼金额 = Column(Float)
 
@@ -375,10 +387,12 @@ class Litigation(Base):
 class Colla(Base):
     """对外担保 13.7"""
     __tablename__ = 'colla'
+    __table_args__ = {'sqlite_autoincrement': True}
 
-    证券代码 = Column(Text, primary_key=True, nullable=False)
+    序号 = Column(Integer, primary_key=True)
+    证券代码 = Column(Text, nullable=False)
     证券简称 = Column(Text)
-    公告日期 = Column(DateTime, primary_key=True, nullable=False)
+    公告日期 = Column(DateTime, nullable=False)
     担保笔数 = Column(BigInteger)
     担保金额 = Column(Float)
     归属于母公司所有者权益 = Column(Float)

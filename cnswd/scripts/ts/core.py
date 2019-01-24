@@ -121,7 +121,7 @@ def refresh(levles=None):
             try:
                 _refresh(api, level)
                 done[level] = True
-            except (IntegrityError, ElementNotInteractableException, NoSuchElementException, TimeoutException) as e:
+            except (IntegrityError, ElementNotInteractableException, NoSuchElementException, TimeoutException, ValueError, ConnectionError) as e:
                 api.logger.notice(f'{LEVEL_MAPS[level][0]} \n {e!r}')
                 done[level] = False
                 api.driver.quit()

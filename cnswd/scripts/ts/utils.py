@@ -60,18 +60,32 @@ def _convert_to_numeric(df):
     return df
 
 
+def _normalize_col_name(col):
+    """
+    规范列名称
+
+    案例：
+        1. 总市值（静态）(亿元) -> 总市值_静态
+        2. 静态市盈率（加权平均） -> 静态市盈率_加权平均
+    """
+    res = ''
+    if re.search(UNIT_PAT, col):
+        res = col.split('(')[0]
+    else:
+        res = col
+    if '%' in res:
+        res = res.replace('%','')
+    res = res.replace('（', '_').replace('）', '')
+    return res
+
+
+
 def _fix_col_name(df):
-    """修复列名称"""
+    """修复数据框的列名称"""
     new_names = []
     for col in df.columns:
-        if re.search(UNIT_PAT, col):
-            new_names.append(col.split('(')[0])
-            # 不包含`(`的列处理
-            current = new_names[-1]
-            if '%' in current:
-                new_names[-1] = current.replace('%','')
-        else:
-            new_names.append(col.replace('（', '_').replace('）', ''))
+        res = _normalize_col_name(col)
+        new_names.append(res)
     df.columns = new_names
     return df
 

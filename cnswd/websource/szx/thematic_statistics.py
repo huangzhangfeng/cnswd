@@ -62,7 +62,7 @@ LEVEL_MAPS = {
     '13.6':    ('公司诉讼', '#dBDatepair > input:nth-child(1)', 'input.date:nth-child(2)', '.condition6 > select:nth-child(2)', 0.2),
     '13.7':    ('对外担保', '#dBDatepair > input:nth-child(1)', 'input.date:nth-child(2)', '.condition6 > select:nth-child(2)', 0.2),
     '14.1':    ('行业市盈率', '#fBDatepair > input:nth-child(1)', None, '.condition6 > select:nth-child(2)', 2.0),
-    '15.1':    ('基金净值增长率', '#fBDatepair > input:nth-child(1)', None, '.condition6 > select:nth-child(2)', 2.0),
+    '15.1':    ('基金净值增长率', '#fBDatepair > input:nth-child(1)', None, '.condition6 > select:nth-child(2)', 3.0),
     '16.1':    ('投资评级', '#fBDatepair > input:nth-child(1)', None, None, 2.0),
 }
 
