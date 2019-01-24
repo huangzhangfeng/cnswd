@@ -438,12 +438,14 @@ class Rnav(Base):
 class StockRating(Base):
     """投资评级 16.1"""
     __tablename__ = 'stock_rating'
+    __table_args__ = {'sqlite_autoincrement': True}
 
-    证券代码 = Column(Text, primary_key=True, nullable=False)
+    序号 = Column(Integer, primary_key=True)
+    证券代码 = Column(Text, nullable=False)
     证券简称 = Column(Text)
-    发布日期 = Column(DateTime, primary_key=True, nullable=False)
+    发布日期 = Column(DateTime, nullable=False)
     研究机构简称 = Column(Text)
-    研究员名称 = Column(Text, primary_key=True, nullable=False)
+    研究员名称 = Column(Text)
     投资评级 = Column(Text)
     是否首次评级 = Column(Text)
     评级变化 = Column(Text)
