@@ -27,16 +27,18 @@ class Classification(Base):
 
 class ActualController(Base):
     """2.1 公司股东实际控制人"""
+    __table_args__ = {'sqlite_autoincrement': True}
 
-    证券代码 = Column(String(6), primary_key=True, nullable=False, index=True)
+    序号 = Column(Integer, primary_key=True, autoincrement='auto')
+    证券代码 = Column(String(6), nullable=False, index=True)
     证券简称 = Column(String(10))
     机构名称 = Column(Text)
-    变动日期 = Column(DateTime, primary_key=True, nullable=False)
+    变动日期 = Column(DateTime, nullable=False)
     公告日期 = Column(DateTime, index=True)
     直接持有人ID = Column(Text)
     直接持有人名称 = Column(Text)
     实际控制人ID = Column(Text)
-    实际控制人名称 = Column(Text, primary_key=True, nullable=False)
+    实际控制人名称 = Column(Text)
     控股数量 = Column(BigInteger)
     控股比例 = Column(Float)
     控制类型编码 = Column(Text)
