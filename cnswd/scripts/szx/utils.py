@@ -74,9 +74,10 @@ def _normalize_col_name(col):
     else:
         res = col
     if '%' in res:
-        res = res.replace('%', '')
+        res = res.replace('%','')
     res = res.replace('（', '_').replace('）', '')
     return res
+
 
 
 def _fix_col_name(df):

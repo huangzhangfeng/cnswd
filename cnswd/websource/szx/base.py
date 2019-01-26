@@ -10,6 +10,7 @@ import logbook
 import pandas as pd
 from logbook.more import ColorizedStderrHandler
 from selenium.common.exceptions import ElementNotInteractableException
+from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
@@ -49,6 +50,7 @@ class SZXPage(object):
 
     def __init__(self, clear_cache, **kwds):
         self.driver = make_headless_browser()
+        # self.driver.maximize_window()
         self.logger = logbook.Logger("深证信")
         # 由于经常会遭遇到未知故障，需要清理缓存，提高成功加载的概率
         if clear_cache:
@@ -76,7 +78,7 @@ class SZXPage(object):
         ht = API_MAPS[num][1]
         self.logger.info(f'{API_MAPS[num][0]}')
         self._load_page(ht)
-        # 特定元素不可见，完成首次页面加载
+        # 特定元素可见，完成首次页面加载
         ops.wait_first_loaded(
             self.wait, check_loaded_css, API_MAPS[num][0])
 
@@ -112,18 +114,14 @@ class SZXPage(object):
         elem.clear()
         elem.send_keys(str(year))
 
-    def _change_date(self, css, date_str):
-        """设置日期"""
-        elem = self.driver.find_element_by_css_selector(css)
-        elem.clear()
-        # 自动补全
-        elem.send_keys(date_str, Keys.TAB)
-
     def _datepicker(self, css, date_str):
         """指定日期"""
         elem = self.driver.find_element_by_css_selector(css)
+        js="var q=document.documentElement.scrollTop=5000"
+        self.driver.execute_script(js)
         elem.clear()
         elem.send_keys(date_str, Keys.TAB)
+        # self.driver.save_screenshot(f"{date_str}.png")
 
     def _auto_change_view_row_num(self, total):
         """

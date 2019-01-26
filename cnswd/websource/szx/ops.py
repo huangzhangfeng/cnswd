@@ -278,7 +278,7 @@ def remove_choosed_code(driver):
         btn = driver.find_element_by_css_selector(btn_css)
         btn.click()
 
-
+# 无法完成滚动定位，废弃
 def add_code(driver, code):
     """添加查询代码"""
     css_fmt = 'div.select-box:nth-child(1) > div:nth-child(3) > ul:nth-child(1) span[data-id="{}"]'

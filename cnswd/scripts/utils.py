@@ -29,17 +29,13 @@ def create_tables(db_dir_name=DB_DIR_NAME, rewrite=False):
         except FileNotFoundError:
             pass
     engine = get_engine(db_dir_name, echo=True)
-    if db_dir_name.startswith('szx'):
+    if db_dir_name.startswith('dataBrowse'):
         SZXBase.metadata.create_all(engine)
     elif db_dir_name.startswith('info'):
         InfoBase.metadata.create_all(engine)
-    # elif db_dir_name.startswith('cn'):
-    #     CNBase.metadata.create_all(engine)
-    elif db_dir_name.startswith('backup'):
-        BackupBase.metadata.create_all(engine)
     elif db_dir_name.startswith('szsh'):
         szshBase.metadata.create_all(engine)
-    elif db_dir_name.startswith('ts'):
+    elif db_dir_name.startswith('thematicStatistics'):
         TSBase.metadata.create_all(engine)
     else:
         raise ValueError(f'不支持{db_dir_name}')

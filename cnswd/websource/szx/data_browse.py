@@ -2,17 +2,16 @@
 
 深证信数据搜索API
 
-**新版**可以一次性加载所有股票代码，但需要注意单次查询的行数不要超限(20000?)。
-
-当前深证信系统不稳定！！！
 """
 import re
 import time
 from functools import lru_cache
 
 import pandas as pd
-from selenium.common.exceptions import (NoSuchElementException,
-                                        ElementClickInterceptedException,
+from selenium.common.exceptions import (ElementNotInteractableException,
+                                        NoSuchElementException,
+                                        StaleElementReferenceException,
+                                        TimeoutException,
                                         UnexpectedAlertPresentException)
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -23,7 +22,7 @@ from cnswd.utils import (ensure_list, get_exchange_from_code, loop_codes,
 
 from . import ops
 from .base import SZXPage
-from .constants import TIMEOUT, MID_WAIT_SECOND, MIN_WAIT_SECOND
+from .constants import MID_WAIT_SECOND, MIN_WAIT_SECOND, TIMEOUT
 
 MARKETS = {
     '深市A': 1,
@@ -50,34 +49,34 @@ T_GROUP_4 = (DATE_1_CSS, DATE_2_CSS)
 
 
 LEVEL_MAPS = {
-    '1.1':   ('基本资料', T_GROUP_1),
-    '2.1':   ('公司股东实际控制人', T_GROUP_4),
-    '2.2':   ('公司股本变动', T_GROUP_4),
-    '2.3':   ('上市公司高管持股变动', T_GROUP_4),
-    '2.4':   ('股东增（减）持情况', T_GROUP_4),
-    '2.5':   ('持股集中度', T_GROUP_3),
-    '3.1':   ('行情数据', T_GROUP_4),
-    '4.1':   ('投资评级', T_GROUP_4),
-    '5.1':   ('上市公司业绩预告', T_GROUP_3),
-    '6.1':   ('分红指标', T_GROUP_2),
-    '7.1':   ('公司增发股票预案', T_GROUP_4),
-    '7.2':   ('公司增发股票实施方案', T_GROUP_4),
-    '7.3':   ('公司配股预案', T_GROUP_4),
-    '7.4':   ('公司配股实施方案', T_GROUP_4),
-    '7.5':   ('公司首发股票', T_GROUP_1),
-    '8.1.1': ('个股TTM财务利润表', T_GROUP_3),
-    '8.1.2': ('个股TTM现金流量表', T_GROUP_3),
-    '8.2.1': ('个股单季财务利润表', T_GROUP_3),
-    '8.2.2': ('个股单季现金流量表', T_GROUP_3),
-    '8.2.3': ('个股单季财务指标', T_GROUP_3),
-    '8.3.1': ('个股报告期资产负债表', T_GROUP_3),
-    '8.3.2': ('个股报告期利润表', T_GROUP_3),
-    '8.3.3': ('个股报告期现金表', T_GROUP_3),
-    '8.3.4': ('金融类资产负债表2007版', T_GROUP_3),
-    '8.3.5': ('金融类利润表2007版', T_GROUP_3),
-    '8.3.6': ('金融类现金流量表2007版', T_GROUP_3),
-    '8.4.1': ('个股报告期指标表', T_GROUP_3),
-    '8.4.2': ('财务指标行业排名', T_GROUP_3),
+    '1.1':   ('基本资料', None, None, 0.2),
+    '2.1':   ('公司股东实际控制人', 'input.date:nth-child(1)', 'input.form-control:nth-child(2)', 0.2),
+    '2.2':   ('公司股本变动', 'input.form-control:nth-child(1)', 'input.date:nth-child(2)', 0.2),
+    '2.3':   ('上市公司高管持股变动', 'input.form-control:nth-child(1)', 'input.date:nth-child(2)', 0.2),
+    '2.4':   ('股东增（减）持情况', 'input.form-control:nth-child(1)', 'input.date:nth-child(2)', 0.2),
+    '2.5':   ('持股集中度', '#se1_sele', '.condition2 > select:nth-child(2)', 0.2),
+    '3.1':   ('行情数据', 'input.form-control:nth-child(1)', 'input.date:nth-child(2)', 0.2),
+    '4.1':   ('投资评级', 'input.form-control:nth-child(1)', 'input.date:nth-child(2)', 0.2),
+    '5.1':   ('上市公司业绩预告', '#se1_sele', '.condition2 > select:nth-child(2)', 0.2),
+    '6.1':   ('分红指标', '.condition2 > select:nth-child(2)', None),
+    '7.1':   ('公司增发股票预案', 'input.form-control:nth-child(1)', 'input.date:nth-child(2)', 0.2),
+    '7.2':   ('公司增发股票实施方案', 'input.date:nth-child(1)', 'input.form-control:nth-child(2)', 0.2),
+    '7.3':   ('公司配股预案', 'input.form-control:nth-child(1)', 'input.date:nth-child(2)', 0.2),
+    '7.4':   ('公司配股实施方案', 'input.form-control:nth-child(1)', 'input.date:nth-child(2)', 0.2),
+    '7.5':   ('公司首发股票', None, None, 0.2),
+    '8.1.1': ('个股TTM财务利润表', '#se1_sele', '.condition2 > select:nth-child(2)', 0.2),
+    '8.1.2': ('个股TTM现金流量表', '#se1_sele', '.condition2 > select:nth-child(2)', 0.2),
+    '8.2.1': ('个股单季财务利润表', '#se1_sele', '.condition2 > select:nth-child(2)', 0.2),
+    '8.2.2': ('个股单季现金流量表', '#se1_sele', '.condition2 > select:nth-child(2)', 0.2),
+    '8.2.3': ('个股单季财务指标', '#se1_sele', '.condition2 > select:nth-child(2)', 0.2),
+    '8.3.1': ('个股报告期资产负债表', '#se1_sele', '.condition2 > select:nth-child(2)', 3.0),
+    '8.3.2': ('个股报告期利润表', '#se1_sele', '.condition2 > select:nth-child(2)', 1.0),
+    '8.3.3': ('个股报告期现金表', '#se1_sele', '.condition2 > select:nth-child(2)', 1.0),
+    '8.3.4': ('金融类资产负债表2007版', '#se1_sele', '.condition2 > select:nth-child(2)', 0.2),
+    '8.3.5': ('金融类利润表2007版', '#se1_sele', '.condition2 > select:nth-child(2)', 0.2),
+    '8.3.6': ('金融类现金流量表2007版', '#se1_sele', '.condition2 > select:nth-child(2)', 0.2),
+    '8.4.1': ('个股报告期指标表', '#se1_sele', '.condition2 > select:nth-child(2)', 0.2),
+    '8.4.2': ('财务指标行业排名', '#se1_sele', '.condition2 > select:nth-child(2)', 0.2),
 }
 
 # 控制参数
@@ -109,20 +108,22 @@ class DataBrowser(SZXPage):
         start = time.time()
         super().__init__(clear_cache=clear_cache, **kwds)
         check_loaded_css = '#apiName'
-        self._switch_to(7, check_loaded_css)
-        self.driver.implicitly_wait(1) # 等待
+        try:
+            self._switch_to(7, check_loaded_css)
+        except TimeoutException:
+            # self.driver.implicitly_wait(2)
+            self._switch_to(7, check_loaded_css)
         self.logger.notice(f'加载主页用时：{(time.time() - start):>0.4f}秒')
-        self._loaded = False
-        self._num = 0 # 可选股票代码总数量
+        self._code_loaded = False
 
     def _load_all_code(self, include_b=True):
         """全选股票代码"""
-        if self._loaded:
+        if self._code_loaded:
             return
         markets = ['沪市A', '深市A']
         label_css = 'div.select-box:nth-child(1) > div:nth-child(1) > label:nth-child(1)'
         btn_css = 'div.arrows-box:nth-child(2) > div:nth-child(1) > button:nth-child(1)'
-        num_css = 'div.select-box:nth-child(3) > div:nth-child(1) > span:nth-child(2)'
+        # num_css = 'div.select-box:nth-child(3) > div:nth-child(1) > span:nth-child(2) > i:nth-child(1)'
         if include_b:
             markets += ['深市B', '沪市B']
         for market in markets:
@@ -134,10 +135,20 @@ class DataBrowser(SZXPage):
             # 全选代码
             btn = self.driver.find_element_by_css_selector(btn_css)
             btn.click()
-            num_elem = self.driver.find_element_by_css_selector(num_css)
-            self._num = ops.get_count(num_elem)
-            self.logger.info(f"加载{market}，累计{self._num}个股票代码")
-        self._loaded = True
+            self.logger.info(f"加载{market}全部股票代码")
+        self._code_loaded = True
+
+    @lru_cache()
+    def get_all_codes(self, include_b=True):
+        """获取股票代码列表"""
+        self._load_all_code(include_b)
+        codes = []
+        css = 'div.select-box:nth-child(3) > div:nth-child(2) > ul:nth-child(1)'
+        ul = self.driver.find_element_by_css_selector(css)
+        spans = ul.find_elements_by_tag_name('span')
+        for span in spans:
+            codes.append(span.get_attribute('data-id'))
+        return sorted(codes)
 
     def _on_pop_alert(self):
         """显示弹出框内容并确认"""
@@ -148,7 +159,8 @@ class DataBrowser(SZXPage):
 
     def _select_level(self, level):
         """选定数据项目"""
-        assert level in self.level_maps.keys(), f'数据搜索指标导航可接受范围：{self.level_maps}'
+        assert level in self.level_maps.keys(
+        ), f'数据搜索指标导航可接受范围：{self.level_maps}'
         ops.select_level(self, self.root_nav_css, level, True)
 
     def _data_item_related(self, level):
@@ -169,8 +181,8 @@ class DataBrowser(SZXPage):
 
     def _set_date_css_by(self, level):
         """根据数据指标，确定t1与t2的css"""
-        self.current_t1_css = self.level_maps[level][1][0]
-        self.current_t2_css = self.level_maps[level][1][1]
+        self.current_t1_css = self.level_maps[level][1]
+        self.current_t2_css = self.level_maps[level][2]
 
     def _change_market_classify(self, market):
         """更改市场分类"""
@@ -193,25 +205,44 @@ class DataBrowser(SZXPage):
                 self.logger.error(f'{e!r}')
             self.current_market = market
 
+    def _search_and_add_code(self, input_elem, i_elem, btn, code):
+        # 输入代码
+        input_elem.clear()
+        input_elem.send_keys(code)
+        # 搜索代码
+        i_elem.click()
+        # 选中代码
+        selected = self.driver.find_element_by_xpath('//*[@id="result_span"]')
+        selected.find_element_by_css_selector('label > span').click()
+        # 添加代码
+        btn.click()
+
     def _change_code(self, codes):
         """
         更改查询股票代码
 
         注意
         ----
-            1. 代码数量一般控制在20个以内
+            1. 代码数量一般控制在`BATCH_CODE_NUM`个以内
             2. 批次代码尽量在同一市场
         """
         if set(codes) != self.current_code:
             if len(codes) > BATCH_CODE_NUM:
                 self.logger.warn(
-                    '为减少失败可能，每批查询代码数量不应超过{}个'.format(BATCH_CODE_NUM))
+                    '为提高数据加载成功率，每批查询代码数量不应超过{}个'.format(BATCH_CODE_NUM))
             ops.remove_choosed_code(self.driver)
+            input_elem = self.driver.find_element_by_css_selector(
+                '.codes-search-left > input:nth-child(1)')
+            i_elem = self.driver.find_element_by_css_selector(
+                '.codes-search-left > i:nth-child(2)')
+            btn_css = 'div.arrows-box:nth-child(2) > div:nth-child(1) > button:nth-child(1)'
+            btn = self.driver.find_element_by_css_selector(btn_css)
             for code in sorted(codes):
-                market = get_exchange_from_code(code)
-                self._change_market_classify(market)
-                ops.add_code(self.driver, code)
+                self._search_and_add_code(input_elem, i_elem, btn, code)
             self.current_code = set(codes)
+            self.logger.info('>>   股票代码：{} - {}'.format(
+                codes[0], codes[-1])
+            )
 
     def _change_t1_value(self, t1):
         """更改查询t1值"""
@@ -268,6 +299,9 @@ class DataBrowser(SZXPage):
         level = ops.item_to_level(indicator, LEVEL_MAPS)
         self._change_data_item(level)
 
+        # 日历元素位于屏幕中间位置
+        self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight / 2);")
+
         # 验证及设置期间
         if self.current_t1_css and (t1 is None):
             raise ValueError('"{}"必须指定"t1"值'.format(indicator))
@@ -278,28 +312,85 @@ class DataBrowser(SZXPage):
         self._change_t2_value(t2)
 
         # 加载全部股票代码
-        # # 维持函数原签名，避免改动
+        self._load_all_code(True)
         if codes is not None:
-            raise ValueError('codes必须为None')
+            codes = sorted(ensure_list(codes))
         else:
-            self._load_all_code()
+            # 待全选正常后，修改以下代码即可。
+            codes = self.get_all_codes()
 
         self.logger.info('>    项目：{} 共 {} 只股票，期间：{} - {}'.format(
-            indicator, self._num, t1, t2)
+            indicator, len(codes), t1, t2)
         )
-        df = self._read_html_table()
+        df = self._read_by_code(codes)
         return df
+
+    def _read_by_code(self, codes):
+        if codes is None:
+            self._load_all_code()
+            res = self._read_html_table()
+        else:
+            dfs = []
+            for b_codes in loop_codes(codes, BATCH_CODE_NUM):
+                self._change_code(b_codes)
+                df = self._read_html_table()
+                dfs.append(df)
+            res = _concat(dfs)
+        return res
+
+    def _data_browse(self):
+        """预览数据"""
+        btn_css = '.dataBrowseBtn'
+        btn = self.driver.find_element_by_css_selector(btn_css)
+        btn.click()
+
+    def _get_response_status(self):
+        """三种状态：
+            1. 无数据
+            2. 失败(如果网络故障或数据量太大)
+            3. 完成
+        """
+        # 首先等待预加载完成
+        load_css = '.onloading'
+        load_locator = (By.CSS_SELECTOR, load_css)
+        load_m = EC.invisibility_of_element_located(load_locator)
+        self.wait.until(load_m, message='预览响应超时')
+
+        # 判断是否无记录
+        try:
+            self.driver.find_element_by_css_selector('.no-records-found')
+            return ops.ResponseStatus.nodata
+        except ops.NoSuchElementException:
+            pass
+
+        sleep_time = self.level_maps[self.current_level][-1]
+        self.driver.implicitly_wait(sleep_time)
+
+        # 判断是否存在异常
+        csss = ['.tips', '.cancel', '.timeout', '.sysbusy']
+        for css in csss:
+            try:
+                elem = self.driver.find_element_by_css_selector(css)
+                if elem.get_attribute('style') == 'display: inline;':
+                    self.logger.notice(f"{elem.text}")
+                    return ops.ResponseStatus.failed
+            except Exception:
+                pass
+
+        return ops.ResponseStatus.completed
 
     def _read_html_table(self):
         """读取当前网页数据表"""
-        status = ops.wait_responsive_table_loaded(self, '.dataBrowseBtn')
+        self._data_browse()
+        status = self._get_response_status()
         if status == ops.ResponseStatus.nodata:
             return pd.DataFrame()
-        if self.current_level == '3.1':
-            self.driver.implicitly_wait(3)
+        elif status == ops.ResponseStatus.failed:
+            raise ConnectionError('网络连接异常或单次请求的数据量太大')
+
         # 读取分页信息
         pagination_css = '.pagination-info'
-        ops.wait_first_loaded(self.wait, '.fixed-table-footer', '提取页数')
+        # ops.wait_first_loaded(self.wait, '.fixed-table-footer', '提取页数')
         pagination = self.driver.find_element_by_css_selector(pagination_css)
         try:
             total = int(re.search(PAGINATION_PAT, pagination.text).group(1))
@@ -315,7 +406,7 @@ class DataBrowser(SZXPage):
         # 调整显示行数
         self._auto_change_view_row_num(total)
         dfs = []
-        na_values = ['-','无']
+        na_values = ['-', '无', ';']
         for i in range(1, self.page_num + 1):
             df = pd.read_html(self.driver.page_source, na_values=na_values)[0]
             dfs.append(df)
@@ -332,9 +423,8 @@ class DataBrowser(SZXPage):
 
     def get_actual_controller(self, codes=None, start=None, end=None):
         """获取公司股东实际控制人(2.1)"""
-        ps = loop_period_by(start, end, 'Y', False)
+        ps = loop_period_by(start, end, 'Q', False)
         dfs = []
-        # 按年循环
         for s, e in ps:
             df = self.query('公司股东实际控制人', codes, s.strftime(
                 r'%Y-%m-%d'), e.strftime(r'%Y-%m-%d'))
@@ -748,7 +838,7 @@ class DataBrowser(SZXPage):
 
     def _is_end_level(self, x):
         """判断层级是否为最末端"""
-        ls = {'1':4,'2':3,'3':5,'4':3,'5':2,'6':2}
+        ls = {'1': 4, '2': 3, '3': 5, '4': 3, '5': 2, '6': 2}
         r = x.split('.')
         return ls[r[0]] == len(r)
 
@@ -758,7 +848,8 @@ class DataBrowser(SZXPage):
         for nth in (1, 2, 3, 4, 5, 6):
             levels.extend(self.get_levels_for(nth))
         # CDR当前不可用
-        levels = [x for x in levels if x not in ('6.6','6.9') and self._is_end_level(x)]
+        levels = [x for x in levels if x not in (
+            '6.6', '6.9') and self._is_end_level(x)]
         self.logger.info('分类层级数量:{}'.format(len(levels)))
         for l in levels:
             self.logger.info('当前分类层级:{}'.format(l))

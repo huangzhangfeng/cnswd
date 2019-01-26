@@ -23,7 +23,6 @@ from cnswd.sql.szx import (ActualController, AdditionalStockImplementation,
                            ShareholderShareChange, ShareholdingConcentration,
                            SharePlacementImplementation, SharePlacementPlan,
                            Classification,
-                           Suspend, Delisting,
                            StockInfo, IPO, TtmCashFlowStatement, TtmIncomeStatement)
 from cnswd.utils import sanitize_dates, MARKET_START
 from cnswd.websource.szx.data_browse import LEVEL_MAPS

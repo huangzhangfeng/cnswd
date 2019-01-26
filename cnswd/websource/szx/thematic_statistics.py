@@ -98,12 +98,12 @@ class ThematicStatistics(SZXPage):
         super().__init__(clear_cache=clear_cache, **kwds)
         # 首页内容加载完成，显示页数
         # check_loaded_css = '.fixed-table-footer'
-        check_loaded_css = '#apiName2'
+        check_loaded_css = '.thematicStatistics-tree'
         try:
             self._switch_to(8, check_loaded_css)
         except TimeoutException:
-            self.driver.implicitly_wait(2)
-            self._switch_to(8, check_loaded_css)
+            self.driver.implicitly_wait(1)
+            # self._switch_to(8, check_loaded_css)
         self.driver.implicitly_wait(1)
         self.logger.notice(f'加载主页用时：{(time.time() - start):>0.2f}秒')
 
@@ -229,7 +229,7 @@ class ThematicStatistics(SZXPage):
             # 12.1 12.2 12.3 没有查询按钮
             btn = self.driver.find_element_by_css_selector(btn_css)
             btn.click()
-        sleep_time = LEVEL_MAPS[self.current_level][4]
+        sleep_time = self.level_maps[self.current_level][-1]
         self.driver.implicitly_wait(sleep_time)
 
     def _get_response_status(self):

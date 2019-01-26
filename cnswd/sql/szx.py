@@ -18,8 +18,8 @@ class ClassificationBom(Base):
 
 class Classification(Base):
     分类层级 = Column(Text, primary_key=True, nullable=False)
-    股票代码 = Column(String(6), primary_key=True, nullable=False, index=True)
-    股票简称 = Column(Text, nullable=False)
+    证券代码 = Column(String(6), primary_key=True, nullable=False, index=True)
+    证券简称 = Column(Text, nullable=False)
     分类名称 = Column(Text)
     分类编码 = Column(Text, nullable=False)
     平台类别 = Column(Text, nullable=False)
@@ -28,8 +28,8 @@ class Classification(Base):
 class ActualController(Base):
     """2.1 公司股东实际控制人"""
 
-    股票代码 = Column(String(6), primary_key=True, nullable=False, index=True)
-    股票简称 = Column(String(10))
+    证券代码 = Column(String(6), primary_key=True, nullable=False, index=True)
+    证券简称 = Column(String(10))
     机构名称 = Column(Text)
     变动日期 = Column(DateTime, primary_key=True, nullable=False)
     公告日期 = Column(DateTime, index=True)
@@ -50,8 +50,8 @@ class CompanyShareChange(Base):
     """2.2 公司股本变动"""
     __tablename__ = 'company_share_changes'
 
-    股票代码 = Column(String(6), primary_key=True, nullable=False, index=True)
-    股票简称 = Column(String(10))
+    证券代码 = Column(String(6), primary_key=True, nullable=False, index=True)
+    证券简称 = Column(String(10))
     机构名称 = Column(Text)
     公告日期 = Column(DateTime, index=True)
     变动日期 = Column(DateTime, primary_key=True, nullable=False)
@@ -73,8 +73,8 @@ class CompanyShareChange(Base):
     其他未流通股 = Column(Float)
     已流通股份 = Column(Float)
     人民币普通股 = Column(Float)
-    境内上市外资股B股 = Column(Float)
-    境外上市外资股H股 = Column(Float)
+    境内上市外资股_B股 = Column(Float)
+    境外上市外资股_H股 = Column(Float)
     高管股 = Column(Float)
     其他流通股 = Column(Float)
     流通受限股份 = Column(Float)
@@ -82,29 +82,28 @@ class CompanyShareChange(Base):
     战略投资者持股 = Column(Float)
     证券投资基金持股 = Column(Float)
     一般法人持股 = Column(Float)
-    国家持股受限 = Column(Float)
-    国有法人持股受限 = Column(Float)
-    其他内资持股受限 = Column(Float)
+    国家持股_受限 = Column(Float)
+    国有法人持股_受限 = Column(Float)
+    其他内资持股_受限 = Column(Float)
     其中_境内法人持股 = Column(Float)
     其中_境内自然人持股 = Column(Float)
-    外资持股受限 = Column(Float)
+    外资持股_受限 = Column(Float)
     其中_境外法人持股 = Column(Float)
     其中_境外自然人持股 = Column(Float)
     其中_限售高管股 = Column(Float)
     其中_限售B股 = Column(Float)
     其中_限售H股 = Column(Float)
-    最新记录标识 = Column(BigInteger)
-
-
-# 手动更改为自动增长
+    最新记录标识 = Column(Integer)
 
 
 class ExecutivesShareChange(Base):
     """2.3 上市公司高管持股变动"""
     __table_args__ = {'sqlite_autoincrement': True}
-    股票代码 = Column(String(6),
+
+    序号 = Column(Integer, primary_key=True, autoincrement='auto')
+    证券代码 = Column(String(6),
                   nullable=False, index=True)
-    股票简称 = Column(String(10))
+    证券简称 = Column(String(10))
     机构名称 = Column(Text)
     截止日期 = Column(DateTime, nullable=False, index=True)
     公告日期 = Column(DateTime, nullable=False, index=True)
@@ -119,39 +118,39 @@ class ExecutivesShareChange(Base):
     成交均价 = Column(Text)
     期末市值 = Column(Float)
     持股变动原因 = Column(Text)
-    序号 = Column(Integer, primary_key=True, autoincrement='auto')
 
 
 class ShareholderShareChange(Base):
     """2.4 股东增（减）持情况"""
     __table_args__ = {'sqlite_autoincrement': True}
     序号 = Column(Integer, primary_key=True, index=True)
-    股票代码 = Column(String(6), nullable=False, index=True)
-    股票简称 = Column(String(10))
+
+    证券代码 = Column(String(6), nullable=False, index=True)
+    证券简称 = Column(String(10))
     机构名称 = Column(Text)
     公告日期 = Column(DateTime, nullable=False, index=True)
-    增减持截止日 = Column(DateTime, nullable=False)
-    增减持类型 = Column(Text, nullable=False)
+    增_减持截止日 = Column(DateTime, nullable=False)
+    增_减持类型 = Column(Text, nullable=False)
     股东名称 = Column(Text, nullable=False)
     股东ID = Column(Text)
     变动数量 = Column(BigInteger)
-    变动数量占总股本比例 = Column(BigInteger)
+    变动数量占总股本比例 = Column(Float)
     变动后占比 = Column(Float)
-    增减持价格上限 = Column(Float)
+    增_减持价格上限 = Column(Text)
 
 
 class ShareholdingConcentration(Base):
     """2.5 持股集中度"""
 
-    股票代码 = Column(String(6),
+    证券代码 = Column(String(6),
                   primary_key=True, nullable=False, index=True)
-    股票简称 = Column(String(10))
+    证券简称 = Column(String(10))
     截止日期 = Column(DateTime, primary_key=True, nullable=False)
-    股东总户数 = Column(BigInteger)
-    A股户数 = Column(BigInteger)
-    B股户数 = Column(BigInteger)
-    H股户数 = Column(BigInteger)
-    户均持股 = Column(BigInteger)
+    股东总户数 = Column(Integer)
+    A股户数 = Column(Integer)
+    B股户数 = Column(Integer)
+    H股户数 = Column(Integer)
+    户均持股 = Column(Integer)
     户均持股比例 = Column(Float)
     前十大股东 = Column(Text)
     股东持股数量 = Column(BigInteger)
@@ -196,15 +195,15 @@ class Quote(Base):
     融资融券余额 = Column(Float)
     市盈率LYR = Column(Float)
     市盈率TTM = Column(Float)
-    市盈率LYR扣非 = Column(Float)
-    市盈率TTM扣非 = Column(Float)
+    市盈率LYR_扣非 = Column(Float)
+    市盈率TTM_扣非 = Column(Float)
     市净率LF = Column(Float)
     市销率LYR = Column(Float)
     市销率TTM = Column(Float)
-    市现率LYR经营 = Column(Float)
-    市现率TTM经营 = Column(Float)
-    市现率LYR总 = Column(Float)
-    市现率TTM总 = Column(Float)
+    市现率LYR_经营 = Column(Float)
+    市现率TTM_经营 = Column(Float)
+    市现率LYR_总 = Column(Float)
+    市现率TTM_总 = Column(Float)
     股息率LYR = Column(Float)
     股息率TTM = Column(Float)
     PEG = Column(Float)
@@ -213,37 +212,36 @@ class Quote(Base):
 
 class InvestmentRating(Base):
     """4.1 投资评级"""
+    __table_args__ = {'sqlite_autoincrement': True}
 
-    股票代码 = Column(String(6),
-                  primary_key=True, nullable=False, index=True)
-    股票简称 = Column(String(10))
-    发布日期 = Column(DateTime, primary_key=True, nullable=False)
-    研究机构简称 = Column(Text, primary_key=True, nullable=False)
-    # 居然存在不署名的情形 000009 2004-11-13 国泰君安 无研究员署名
-    # 对原始数据进行处理，去掉无署名部分
-    研究员名称 = Column(Text, primary_key=True, nullable=False)
+    序号 = Column(Integer, primary_key=True, index=True)
+    证券代码 = Column(String(6), nullable=False, index=True)
+    证券简称 = Column(String(10))
+    发布日期 = Column(DateTime, nullable=False)
+    研究机构简称 = Column(Text)
+    研究员名称 = Column(Text)
     投资评级 = Column(Text)
-    投资评级经调整 = Column(Text)
+    投资评级_经调整 = Column(Text)
     是否首次评级 = Column(Text)
     评级变化 = Column(Text)
     前一次投资评级 = Column(Text)
-    目标价格下限 = Column(Float)
-    目标价格上限 = Column(Float)
+    目标价格_下限 = Column(Float)
+    目标价格_上限 = Column(Float)
 
 
 class PerformanceForecaste(Base):
     """5.1 上市公司业绩预告"""
 
-    股票代码 = Column(String(6),
+    证券代码 = Column(String(6),
                   primary_key=True, nullable=False, index=True)
-    股票简称 = Column(String(10))
+    证券简称 = Column(String(10))
     公告日期 = Column(DateTime, primary_key=True, nullable=False, index=True)
     报告年度 = Column(DateTime, primary_key=True, nullable=False)
-    业绩类型编码 = Column(BigInteger)
+    业绩类型编码 = Column(Integer)
     业绩类型 = Column(Text)
     业绩预告内容 = Column(Text)
     业绩变化原因 = Column(Text)
-    报告期最新记录标识 = Column(BigInteger)
+    报告期最新记录标识 = Column(Integer)
     本期净利润下限 = Column(Float)
     本期净利润上限 = Column(Float)
     本期净利润增减幅下限 = Column(Float)
@@ -253,9 +251,9 @@ class PerformanceForecaste(Base):
 class Dividend(Base):
     """6.1 分红指标"""
 
-    股票代码 = Column(String(6),
+    证券代码 = Column(String(6),
                   primary_key=True, nullable=False, index=True)
-    股票简称 = Column(String(10))
+    证券简称 = Column(String(10))
     分红年度 = Column(DateTime, primary_key=True, nullable=False)
     董事会预案公告日期 = Column(DateTime)
     董事会预案分红说明 = Column(Text)
@@ -263,13 +261,13 @@ class Dividend(Base):
     股东大会预案分红说明 = Column(Text)
     实施方案公告日期 = Column(DateTime)
     实施方案分红说明 = Column(Text)
-    分配股本基数实施 = Column(Float)
+    分配股本基数_实施 = Column(Float)
     股本基准年度 = Column(DateTime)
     送股比例 = Column(Float)
     转增比例 = Column(Float)
-    派息比例人民币 = Column(Float)
-    派息比例美元 = Column(Float)
-    派息比例港币 = Column(Float)
+    派息比例_人民币 = Column(Float)
+    派息比例_美元 = Column(Float)
+    派息比例_港币 = Column(Float)
     送股数量 = Column(Float)
     转增数量 = Column(Float)
     派息金额人民币万元 = Column(Float)
@@ -278,8 +276,8 @@ class Dividend(Base):
     A股除权日 = Column(DateTime)
     B股除权基准日 = Column(DateTime)
     B股最后交易日 = Column(DateTime)
-    派息日A = Column(DateTime)
-    派息日B = Column(DateTime)
+    派息日_A = Column(DateTime)
+    派息日_B = Column(DateTime)
     A股送红股到帐日 = Column(DateTime)
     A股新增股份上市日 = Column(DateTime)
     B股新增股份上市日 = Column(DateTime)
@@ -287,8 +285,8 @@ class Dividend(Base):
     送转后总股本 = Column(Float)
     送转前流通股本 = Column(Float)
     送转后流通股本 = Column(Float)
-    分配股本基数董万股 = Column(Float)
-    分配股本基数股万股 = Column(Float)
+    分配股本基数_董 = Column(Float)
+    分配股本基数 = Column(Float)
     方案进度 = Column(Text)
     取消分红公告日期 = Column(DateTime)
     A股转赠股份到帐日 = Column(DateTime)
@@ -300,9 +298,9 @@ class Dividend(Base):
 class AdditionalStockPlan(Base):
     """7.1 公司增发股票预案"""
 
-    股票代码 = Column(String(6),
+    证券代码 = Column(String(6),
                   primary_key=True, nullable=False, index=True)
-    股票简称 = Column(String(10))
+    证券简称 = Column(String(10))
     机构名称 = Column(Text)
     公告日期 = Column(DateTime, primary_key=True, nullable=False, index=True)
     股票类别编码 = Column(BigInteger)
@@ -329,9 +327,9 @@ class AdditionalStockPlan(Base):
 class AdditionalStockImplementation(Base):
     """7.2 公司增发股票实施方案"""
 
-    股票代码 = Column(String(6),
+    证券代码 = Column(String(6),
                   primary_key=True, nullable=False, index=True)
-    股票简称 = Column(String(10))
+    证券简称 = Column(String(10))
     机构名称 = Column(Text)
     公告日期 = Column(DateTime, primary_key=True, index=True)
     股票类别编码 = Column(BigInteger)
@@ -339,8 +337,8 @@ class AdditionalStockImplementation(Base):
     总发行数量 = Column(Float)
     公开发行数量 = Column(Float)
     每股面值 = Column(BigInteger)
-    发行价格人民币 = Column(Float)
-    发行价格外币 = Column(Text)
+    发行价格_人民币 = Column(Float)
+    发行价格_外币 = Column(Text)
     币种编码 = Column(BigInteger)
     币种 = Column(Text)
     竞价上限 = Column(Float)
@@ -356,8 +354,8 @@ class AdditionalStockImplementation(Base):
     预计募资金额 = Column(Float)
     实际募资总额 = Column(Float)
     其中现金 = Column(Float)
-    实际募资净额人民币 = Column(Float)
-    实际募资净额外币 = Column(Float)
+    实际募资净额_人民币 = Column(Float)
+    实际募资净额_外币 = Column(Float)
     发行费用总额 = Column(Float)
     承销费用 = Column(Float)
     每股发行费用 = Column(Float)
@@ -450,18 +448,18 @@ class AdditionalStockImplementation(Base):
 class SharePlacementPlan(Base):
     """7.3 公司配股预案"""
 
-    股票代码 = Column(String(6),
+    证券代码 = Column(String(6),
                   primary_key=True, nullable=False, index=True)
-    股票简称 = Column(String(10))
+    证券简称 = Column(String(10))
     机构名称 = Column(Text)
     公告日期 = Column(DateTime, primary_key=True, nullable=False, index=True)
-    股票类别编码 = Column(BigInteger)
+    股票类别编码 = Column(Integer)
     股票类别 = Column(Text)
     董事会预案内容 = Column(Text)
     股东大会预案内容 = Column(Text)
-    配股比例董 = Column(Float)
-    配股比例股 = Column(Float)
-    每股面值 = Column(BigInteger)
+    配股比例_董 = Column(Float)
+    配股比例 = Column(Float)
+    每股面值 = Column(Integer)
     配股基准股本 = Column(Float)
     股本基准年度 = Column(DateTime)
     预计配股价格上限 = Column(Text)
@@ -470,7 +468,7 @@ class SharePlacementPlan(Base):
     预计配股数量 = Column(Float)
     预计募集资金 = Column(BigInteger)
     预计募资投向 = Column(Text)
-    方案进度编码 = Column(BigInteger)
+    方案进度编码 = Column(Integer)
     方案进度 = Column(Text)
     股东决议公告日期 = Column(DateTime)
     配股获准公告日期 = Column(DateTime)
@@ -481,9 +479,9 @@ class SharePlacementPlan(Base):
 class SharePlacementImplementation(Base):
     """7.4 公司配股实施方案"""
 
-    股票代码 = Column(String(6),
+    证券代码 = Column(String(6),
                   primary_key=True, nullable=False, index=True)
-    股票简称 = Column(Text(10))
+    证券简称 = Column(Text(10))
     机构名称 = Column(Text)
     公告日期 = Column(DateTime, primary_key=True, nullable=False, index=True)
     股票类别编码 = Column(BigInteger)
@@ -544,9 +542,9 @@ class SharePlacementImplementation(Base):
 class IPO(Base):
     """7.5 公司首发股票"""
 
-    股票代码 = Column(String(6),
+    证券代码 = Column(String(6),
                   primary_key=True, nullable=False, index=True)
-    股票简称 = Column(String(10))
+    证券简称 = Column(String(10))
     机构名称 = Column(Text)
     股票类别编码 = Column(BigInteger)
     股票类别 = Column(Text)
@@ -557,8 +555,8 @@ class IPO(Base):
     定向募集职工股 = Column(Text)
     其他发行数量 = Column(Text)
     每股面值 = Column(BigInteger)
-    发行价格人民币 = Column(Float)
-    发行价格外币 = Column(Text)
+    发行价格_人民币 = Column(Float)
+    发行价格_外币 = Column(Float)
     外币币种编码 = Column(Text)
     外币币种 = Column(Text)
     加权发行市盈率 = Column(Text)
@@ -571,18 +569,18 @@ class IPO(Base):
     发行对象 = Column(Text)
     发行方式编码 = Column(Text)
     发行方式 = Column(Text)
-    承销方式编码 = Column(BigInteger)
+    承销方式编码 = Column(Text)
     承销方式 = Column(Text)
     发行地区 = Column(Text)
     发行地区编码 = Column(Text)
     主要发起人 = Column(Text)
     分配承诺 = Column(Text)
-    预计募集资金 = Column(BigInteger)
-    实际募资总额 = Column(BigInteger)
-    实际募资净额人民币 = Column(BigInteger)
-    实际募资净额外币 = Column(Text)
-    发行费用总额 = Column(BigInteger)
-    承销费用 = Column(Text)
+    预计募集资金 = Column(Float)
+    实际募资总额 = Column(Float)
+    实际募资净额_人民币 = Column(Float)
+    实际募资净额_外币 = Column(Float)
+    发行费用总额 = Column(Float)
+    承销费用 = Column(Float)
     每股发行费用 = Column(Float)
     招股公告日期 = Column(DateTime)
     市值计算日 = Column(DateTime)
@@ -670,15 +668,15 @@ class IPO(Base):
     网下申购剔除价格下限 = Column(Text)
     IPO阶段进展状态 = Column(Text)
     IPO阶段进展状态编码 = Column(Text)
-    记录标识 = Column(BigInteger)
+    记录标识 = Column(Text)
 
 
 class TtmIncomeStatement(Base):
     """8.1.1 个股TTM财务利润表"""
 
-    股票代码 = Column(String(6),
+    证券代码 = Column(String(6),
                   primary_key=True, nullable=False, index=True)
-    股票简称 = Column(String(10))
+    证券简称 = Column(String(10))
     开始日期 = Column(DateTime)
     截止日期 = Column(DateTime)
     报告年度 = Column(DateTime, primary_key=True, nullable=False)
@@ -696,27 +694,27 @@ class TtmIncomeStatement(Base):
     投资收益 = Column(Float)
     其中_对联营企业和合营企业的投资收益 = Column(Float)
     影响营业利润的其他科目 = Column(Float)
-    三_营业利润 = Column(Float)
+    营业利润 = Column(Float)
     加_补贴收入 = Column(Float)
     营业外收入 = Column(Float)
     减_营业外支出 = Column(Float)
     其中_非流动资产处置损失 = Column(Float)
     加_影响利润总额的其他科目 = Column(Float)
-    四_利润总额 = Column(Float)
+    利润总额 = Column(Float)
     减_所得税 = Column(Float)
     加_影响净利润的其他科目 = Column(Float)
-    五_净利润 = Column(Float)
+    净利润 = Column(Float)
     归属于母公司所有者的净利润 = Column(Float)
     少数股东损益 = Column(Float)
-    六_每股收益 = Column(Float)
-    一基本每股收益 = Column(Float)
+    每股收益 = Column(Float)
+    基本每股收益 = Column(Float)
     利息收入 = Column(Float)
     已赚保费 = Column(Float)
-    一_营业总收入 = Column(Float)
-    二_营业总成本 = Column(Float)
+    营业总收入 = Column(Float)
+    营业总成本 = Column(Float)
     汇兑收益 = Column(Float)
-    七_其他综合收益 = Column(Float)
-    八_综合收益总额 = Column(Float)
+    其他综合收益 = Column(Float)
+    综合收益总额 = Column(Float)
     其中_归属于母公司 = Column(Float)
     其中_归属于少数股东 = Column(Float)
     手续费及佣金收入 = Column(Float)
@@ -734,9 +732,9 @@ class TtmIncomeStatement(Base):
 class TtmCashFlowStatement(Base):
     """8.1.2 个股TTM现金流量表"""
 
-    股票代码 = Column(String(6),
+    证券代码 = Column(String(6),
                   primary_key=True, nullable=False, index=True)
-    股票简称 = Column(String(10))
+    证券简称 = Column(String(10))
     开始日期 = Column(DateTime)
     截止日期 = Column(DateTime)
     报告年度 = Column(DateTime, primary_key=True, nullable=False)
@@ -773,12 +771,12 @@ class TtmCashFlowStatement(Base):
     支付其他与筹资活动有关的现金 = Column(Float)
     筹资活动现金流出小计 = Column(Float)
     筹资活动产生的现金流量净额 = Column(Float)
-    四_汇率变动对现金的影响 = Column(Float)
-    四2_其他原因对现金的影响 = Column(Float)
-    五_现金及现金等价物净增加额 = Column(Float)
+    汇率变动对现金的影响 = Column(Float)
+    其他原因对现金的影响 = Column(Float)
+    现金及现金等价物净增加额 = Column(Float)
     期初现金及现金等价物余额 = Column(Float)
     期末现金及现金等价物余额 = Column(Float)
-    A_将净利润调节为经营活动现金流量 = Column(Float)
+    将净利润调节为经营活动现金流量 = Column(Float)
     净利润 = Column(Float)
     加_资产减值准备 = Column(Float)
     固定资产折旧_油气资产折耗_生产性生物资产折旧 = Column(Float)
@@ -796,11 +794,11 @@ class TtmCashFlowStatement(Base):
     经营性应付项目的增加 = Column(Float)
     其他 = Column(Float)
     经营活动产生的现金流量净额2 = Column(Float)
-    B_不涉及现金收支的重大投资和筹资活动 = Column(Float)
+    不涉及现金收支的重大投资和筹资活动 = Column(Float)
     债务转为资本 = Column(Float)
     一年内到期的可转换公司债券 = Column(Float)
     融资租入固定资产 = Column(Float)
-    C_现金及现金等价物净变动情况 = Column(Float)
+    现金及现金等价物净变动情况 = Column(Float)
     现金的期末余额 = Column(Float)
     减_现金的期初余额 = Column(Float)
     加_现金等价物的期末余额 = Column(Float)
@@ -832,9 +830,9 @@ class TtmCashFlowStatement(Base):
 class QuarterlyIncomeStatement(Base):
     """8.2.1 个股单季财务利润表"""
 
-    股票代码 = Column(String(6),
+    证券代码 = Column(String(6),
                   primary_key=True, nullable=False, index=True)
-    股票简称 = Column(String(10))
+    证券简称 = Column(String(10))
     开始日期 = Column(DateTime)
     截止日期 = Column(DateTime)
     报告年度 = Column(DateTime, primary_key=True, nullable=False)
@@ -852,27 +850,27 @@ class QuarterlyIncomeStatement(Base):
     投资收益 = Column(Float)
     其中_对联营企业和合营企业的投资收益 = Column(Float)
     影响营业利润的其他科目 = Column(Float)
-    三_营业利润 = Column(Float)
+    营业利润 = Column(Float)
     加_补贴收入 = Column(Float)
     营业外收入 = Column(Float)
     减_营业外支出 = Column(Float)
     其中_非流动资产处置损失 = Column(Float)
     加_影响利润总额的其他科目 = Column(Float)
-    四_利润总额 = Column(Float)
+    利润总额 = Column(Float)
     减_所得税 = Column(Float)
     加_影响净利润的其他科目 = Column(Float)
-    五_净利润 = Column(Float)
+    净利润 = Column(Float)
     归属于母公司所有者的净利润 = Column(Float)
     少数股东损益 = Column(Float)
-    六_每股收益 = Column(Float)
-    一基本每股收益 = Column(Float)
+    每股收益 = Column(Float)
+    基本每股收益 = Column(Float)
     利息收入 = Column(Float)
     已赚保费 = Column(Float)
-    一_营业总收入 = Column(Float)
-    二_营业总成本 = Column(Float)
+    营业总收入 = Column(Float)
+    营业总成本 = Column(Float)
     汇兑收益 = Column(Float)
-    七_其他综合收益 = Column(Float)
-    八_综合收益总额 = Column(Float)
+    其他综合收益 = Column(Float)
+    综合收益总额 = Column(Float)
     其中_归属于母公司 = Column(Float)
     其中_归属于少数股东 = Column(Float)
     手续费及佣金收入 = Column(Float)
@@ -890,9 +888,9 @@ class QuarterlyIncomeStatement(Base):
 class QuarterlyCashFlowStatement(Base):
     """8.2.2 个股单季现金流量表"""
 
-    股票代码 = Column(String(6),
+    证券代码 = Column(String(6),
                   primary_key=True, nullable=False, index=True)
-    股票简称 = Column(String(10))
+    证券简称 = Column(String(10))
     开始日期 = Column(DateTime)
     截止日期 = Column(DateTime)
     报告年度 = Column(DateTime, primary_key=True, nullable=False)
@@ -929,12 +927,12 @@ class QuarterlyCashFlowStatement(Base):
     支付其他与筹资活动有关的现金 = Column(Float)
     筹资活动现金流出小计 = Column(Float)
     筹资活动产生的现金流量净额 = Column(Float)
-    四_汇率变动对现金的影响 = Column(Float)
-    四2_其他原因对现金的影响 = Column(Float)
-    五_现金及现金等价物净增加额 = Column(Float)
+    汇率变动对现金的影响 = Column(Float)
+    其他原因对现金的影响 = Column(Float)
+    现金及现金等价物净增加额 = Column(Float)
     期初现金及现金等价物余额 = Column(Float)
     期末现金及现金等价物余额 = Column(Float)
-    A_将净利润调节为经营活动现金流量 = Column(Float)
+    将净利润调节为经营活动现金流量 = Column(Float)
     净利润 = Column(Float)
     加_资产减值准备 = Column(Float)
     固定资产折旧_油气资产折耗_生产性生物资产折旧 = Column(Float)
@@ -952,11 +950,11 @@ class QuarterlyCashFlowStatement(Base):
     经营性应付项目的增加 = Column(Float)
     其他 = Column(Float)
     经营活动产生的现金流量净额2 = Column(Float)
-    B_不涉及现金收支的重大投资和筹资活动 = Column(Float)
+    不涉及现金收支的重大投资和筹资活动 = Column(Float)
     债务转为资本 = Column(Float)
     一年内到期的可转换公司债券 = Column(Float)
     融资租入固定资产 = Column(Float)
-    C_现金及现金等价物净变动情况 = Column(Float)
+    现金及现金等价物净变动情况 = Column(Float)
     现金的期末余额 = Column(Float)
     减_现金的期初余额 = Column(Float)
     加_现金等价物的期末余额 = Column(Float)
@@ -988,9 +986,9 @@ class QuarterlyCashFlowStatement(Base):
 class QuarterlyFinancialIndicator(Base):
     """8.2.3 个股单季财务指标"""
 
-    股票代码 = Column(String(6),
+    证券代码 = Column(String(6),
                   primary_key=True, nullable=False, index=True)
-    股票简称 = Column(String(10))
+    证券简称 = Column(String(10))
     开始日期 = Column(DateTime)
     截止日期 = Column(DateTime)
     报告年度 = Column(DateTime, primary_key=True, nullable=False)
@@ -1030,8 +1028,8 @@ class QuarterlyFinancialIndicator(Base):
     营业利润增长率 = Column(Float)
     每股现金流量 = Column(Float)
     每股经营现金流量 = Column(Float)
-    经营净现金比率短期债务 = Column(Float)
-    经营净现金比率全部债务 = Column(Float)
+    经营净现金比率_短期债务 = Column(Float)
+    经营净现金比率_全部债务 = Column(Float)
     经营活动现金净流量与净利润比率 = Column(Float)
     营业收入现金含量 = Column(Float)
     全部资产现金回收率 = Column(Float)
@@ -1040,7 +1038,7 @@ class QuarterlyFinancialIndicator(Base):
     现金转换周期 = Column(Float)
     净利含金量 = Column(Float)
     期间费用增长率 = Column(Float)
-    基本获利能力EBIT = Column(Float)
+    基本获利能力_EBIT = Column(Float)
     应收账款占比 = Column(Float)
     存货占比 = Column(Float)
     年化期间费用毛利比 = Column(Float)
@@ -1049,8 +1047,8 @@ class QuarterlyFinancialIndicator(Base):
 class PeriodlyBalanceSheet(Base):
     """8.3.1 个股报告期资产负债表"""
 
-    股票代码 = Column(String(6), primary_key=True, nullable=False, index=True)
-    股票简称 = Column(String(10))
+    证券代码 = Column(String(6), primary_key=True, nullable=False, index=True)
+    证券简称 = Column(String(10))
     机构名称 = Column(Text)
     公告日期 = Column(DateTime, index=True)
     截止日期 = Column(DateTime)
@@ -1175,8 +1173,8 @@ class PeriodlyBalanceSheet(Base):
 class PeriodlyIncomeStatement(Base):
     """8.3.2 个股报告期利润表"""
 
-    股票代码 = Column(String(6), primary_key=True, nullable=False, index=True)
-    股票简称 = Column(String(10))
+    证券代码 = Column(String(6), primary_key=True, nullable=False, index=True)
+    证券简称 = Column(String(10))
     机构名称 = Column(Text)
     公告日期 = Column(DateTime, index=True)
     开始日期 = Column(DateTime)
@@ -1186,12 +1184,12 @@ class PeriodlyIncomeStatement(Base):
     合并类型 = Column(Text)
     报表来源编码 = Column(BigInteger)
     报表来源 = Column(Text)
-    一_营业总收入 = Column(Float)
+    营业总收入 = Column(Float)
     其中_营业收入 = Column(Float)
     利息收入 = Column(Float)
     已赚保费 = Column(Float)
     手续费及佣金收入 = Column(Float)
-    二_营业总成本 = Column(Float)
+    营业总成本 = Column(Float)
     其中_营业成本 = Column(Float)
     利息支出 = Column(Float)
     手续费及佣金支出 = Column(Float)
@@ -1216,25 +1214,25 @@ class PeriodlyIncomeStatement(Base):
     净敞口套期收益 = Column(Float)
     资产处置收益 = Column(Float)
     影响营业利润的其他科目 = Column(Float)
-    三_营业利润 = Column(Float)
+    营业利润 = Column(Float)
     加_补贴收入 = Column(Float)
     营业外收入 = Column(Float)
     其中_非流动资产处置利得 = Column(Float)
     减_营业外支出 = Column(Float)
     其中_非流动资产处置损失 = Column(Float)
     加_影响利润总额的其他科目 = Column(Float)
-    四_利润总额 = Column(Float)
+    利润总额 = Column(Float)
     减_所得税 = Column(Float)
     加_影响净利润的其他科目 = Column(Float)
-    五_净利润 = Column(Float)
+    净利润 = Column(Float)
     持续经营净利润 = Column(Float(2))
     终止经营净利润 = Column(Float(2))
     归属于母公司所有者的净利润 = Column(Float)
     少数股东损益 = Column(Float)
-    一基本每股收益 = Column(Float)
-    二稀释每股收益 = Column(Float)
-    七_其他综合收益 = Column(Float)
-    八_综合收益总额 = Column(Float)
+    基本每股收益 = Column(Float)
+    稀释每股收益 = Column(Float)
+    其他综合收益 = Column(Float)
+    综合收益总额 = Column(Float)
     其中_归属于母公司 = Column(Float)
     其中_归属于少数股东 = Column(Float)
     备注 = Column(Text)
@@ -1243,8 +1241,8 @@ class PeriodlyIncomeStatement(Base):
 class PeriodlyCashFlowStatement(Base):
     """8.3.3 个股报告期现金表"""
 
-    股票代码 = Column(String(6), primary_key=True, nullable=False, index=True)
-    股票简称 = Column(String(10))
+    证券代码 = Column(String(6), primary_key=True, nullable=False, index=True)
+    证券简称 = Column(String(10))
     机构名称 = Column(Text)
     公告日期 = Column(DateTime, index=True)
     开始日期 = Column(DateTime)
@@ -1287,9 +1285,9 @@ class PeriodlyCashFlowStatement(Base):
     支付其他与筹资活动有关的现金 = Column(Float)
     筹资活动现金流出小计 = Column(Float)
     筹资活动产生的现金流量净额 = Column(Float)
-    四_汇率变动对现金的影响 = Column(Float)
-    四2_其他原因对现金的影响 = Column(Float)
-    五_现金及现金等价物净增加额 = Column(Float)
+    汇率变动对现金的影响 = Column(Float)
+    其他原因对现金的影响 = Column(Float)
+    现金及现金等价物净增加额 = Column(Float)
     期初现金及现金等价物余额 = Column(Float)
     期末现金及现金等价物余额 = Column(Float)
     净利润 = Column(Float)
@@ -1341,8 +1339,8 @@ class PeriodlyCashFlowStatement(Base):
 class PeriodlyBalanceSheet2007(Base):
     """8.3.4 金融类资产负债表2007版"""
 
-    股票代码 = Column(String(6), primary_key=True, nullable=False, index=True)
-    股票简称 = Column(String(10))
+    证券代码 = Column(String(6), primary_key=True, nullable=False, index=True)
+    证券简称 = Column(String(10))
     机构名称 = Column(Text)
     公告日期 = Column(DateTime, index=True)
     截止日期 = Column(DateTime)
@@ -1454,8 +1452,8 @@ class PeriodlyBalanceSheet2007(Base):
 class PeriodlyIncomeStatement2007(Base):
     """8.3.5 金融类利润表2007版"""
 
-    股票代码 = Column(String(6), primary_key=True, nullable=False, index=True)
-    股票简称 = Column(String(10))
+    证券代码 = Column(String(6), primary_key=True, nullable=False, index=True)
+    证券简称 = Column(String(10))
     机构名称 = Column(Text)
     公告日期 = Column(DateTime, index=True)
     开始日期 = Column(DateTime)
@@ -1465,7 +1463,7 @@ class PeriodlyIncomeStatement2007(Base):
     合并类型 = Column(Text)
     报表来源编码 = Column(BigInteger)
     报表来源 = Column(Text)
-    一_营业收入 = Column(Float)
+    营业收入 = Column(Float)
     利息净收入 = Column(Float)
     其中_利息收入 = Column(Float)
     其中_利息支出 = Column(Float)
@@ -1485,7 +1483,7 @@ class PeriodlyIncomeStatement2007(Base):
     公允价值变动收益 = Column(Float)
     汇兑收益 = Column(Float)
     其他业务收入 = Column(Float)
-    二_营业支出 = Column(Float)
+    营业支出 = Column(Float)
     退保金 = Column(Float)
     赔付支出 = Column(Float)
     减_摊回赔付支出 = Column(Float)
@@ -1499,21 +1497,21 @@ class PeriodlyIncomeStatement2007(Base):
     减_摊回分保费用 = Column(Float)
     资产减值损失 = Column(Float)
     其他业务成本 = Column(Float)
-    三_营业利润 = Column(Float)
+    营业利润 = Column(Float)
     加_补贴收入 = Column(Float)
     营业外收入 = Column(Float)
     减_营业外支出 = Column(Float)
     加_影响利润总额的其他科目 = Column(Float)
-    四_利润总额 = Column(Float)
+    利润总额 = Column(Float)
     减_所得税 = Column(Float)
     加_影响净利润的其他科目 = Column(Float)
-    五_净利润 = Column(Float)
-    一归属于母公司所有者的净利润 = Column(Float)
-    二少数股东损益 = Column(Float)
-    一基本每股收益 = Column(Float)
-    二稀释每股收益 = Column(Float)
-    七_其他综合收益 = Column(Float)
-    八_综合收益总额 = Column(Float)
+    净利润 = Column(Float)
+    归属于母公司所有者的净利润 = Column(Float)
+    少数股东损益 = Column(Float)
+    基本每股收益 = Column(Float)
+    稀释每股收益 = Column(Float)
+    其他综合收益 = Column(Float)
+    综合收益总额 = Column(Float)
     其中_归属于母公司 = Column(Float)
     其中_归属于少数股东 = Column(Float)
     其他收益 = Column(Float)
@@ -1522,8 +1520,8 @@ class PeriodlyIncomeStatement2007(Base):
 class PeriodlyCashFlowStatement2007(Base):
     """8.3.6 金融类现金流量表2007版"""
 
-    股票代码 = Column(String(6), primary_key=True, nullable=False, index=True)
-    股票简称 = Column(String(10))
+    证券代码 = Column(String(6), primary_key=True, nullable=False, index=True)
+    证券简称 = Column(String(10))
     机构名称 = Column(Text)
     公告日期 = Column(DateTime, index=True)
     开始日期 = Column(DateTime)
@@ -1588,9 +1586,9 @@ class PeriodlyCashFlowStatement2007(Base):
     支付其他与筹资活动有关的现金 = Column(Float)
     筹资活动现金流出小计 = Column(BigInteger)
     筹资活动产生的现金流量净额 = Column(BigInteger)
-    四_汇率变动对现金的影响 = Column(BigInteger)
-    四2_其他原因对现金的影响 = Column(Float)
-    五_现金及现金等价物净增加额 = Column(BigInteger)
+    汇率变动对现金的影响 = Column(BigInteger)
+    其他原因对现金的影响 = Column(Float)
+    现金及现金等价物净增加额 = Column(BigInteger)
     期初现金及现金等价物余额 = Column(BigInteger)
     期末现金及现金等价物余额 = Column(BigInteger)
     净利润 = Column(Float)
@@ -1613,7 +1611,7 @@ class PeriodlyCashFlowStatement2007(Base):
     债务转为资本 = Column(Float)
     一年内到期的可转换公司债券 = Column(Float)
     融资租入固定资产 = Column(Float)
-    C_现金及现金等价物净变动情况 = Column(Float)
+    现金及现金等价物净变动情况 = Column(Float)
     现金的期末余额 = Column(Float)
     减_现金的期初余额 = Column(Float)
     加_现金等价物的期末余额 = Column(Float)
@@ -1626,8 +1624,8 @@ class PeriodlyCashFlowStatement2007(Base):
 class PeriodlyFinancialIndicator(Base):
     """8.4.1 个股报告期指标表"""
 
-    股票代码 = Column(String(6), primary_key=True, nullable=False, index=True)
-    股票简称 = Column(String(10))
+    证券代码 = Column(String(6), primary_key=True, nullable=False, index=True)
+    证券简称 = Column(String(10))
     报告年度 = Column(DateTime, primary_key=True, nullable=False)
     机构名称 = Column(Text)
     开始日期 = Column(DateTime)
@@ -1692,14 +1690,14 @@ class PeriodlyFinancialIndicator(Base):
     营业利润增长率 = Column(Float)
     每股现金流量 = Column(Float)
     每股经营现金流量 = Column(Float)
-    经营净现金比率短期债务 = Column(Float)
-    经营净现金比率全部债务 = Column(Float)
+    经营净现金比率_短期债务 = Column(Float)
+    经营净现金比率_全部债务 = Column(Float)
     经营活动现金净流量与净利润比率 = Column(Float)
     营业收入现金含量 = Column(Float)
     全部资产现金回收率 = Column(Float)
-    净资产收益率扣除非经常性损益 = Column(Float)
+    净资产收益率_扣除非经常性损益 = Column(Float)
     净资产收益率_加权 = Column(Float)
-    净资产收益率_加权扣除非经常性损益 = Column(Float)
+    净资产收益率_加权_扣除非经常性损益 = Column(Float)
     合并类型编码 = Column(BigInteger)
     合并类型 = Column(Text)
     扣除非经常性损益后的净利润 = Column(Float)
@@ -1719,8 +1717,8 @@ class PeriodlyFinancialIndicator(Base):
 
 class FinancialIndicatorRanking(Base):
     """8.4.2 财务指标行业排名"""
-    股票代码 = Column(String(6), primary_key=True, nullable=False, index=True)
-    股票简称 = Column(String(10))
+    证券代码 = Column(String(6), primary_key=True, nullable=False, index=True)
+    证券简称 = Column(String(10))
     行业ID = Column(Text)
     行业名称 = Column(Text)
     行业级别 = Column(BigInteger)
@@ -1763,8 +1761,8 @@ class FinancialIndicatorRanking(Base):
 
 class StockInfo(Base):
     """1.1 基本资料"""
-    股票代码 = Column(String(6), primary_key=True, index=True)
-    股票简称 = Column(String(10))
+    证券代码 = Column(String(6), primary_key=True, index=True)
+    证券简称 = Column(String(10))
     机构名称 = Column(Text)
     股票类别 = Column(Text)
     上市日期 = Column(DateTime)
@@ -1804,33 +1802,3 @@ class StockInfo(Base):
     证券事务代表 = Column(Text)
     会计师事务所 = Column(Text)
     律师事务所 = Column(Text)
-
-
-# class RefreshRecord(Base):
-#     """股票项目刷新完成记录"""
-#     __table_args__ = {'sqlite_autoincrement': True}
-#     序号 = Column(Integer, primary_key=True)
-#     层级 = Column(String(20))
-#     代码 = Column(String(6))
-#     状态 = Column(Boolean)
-#     异常 = Column(Text)
-#     更新时间 = Column(DateTime)
-#     下一次开始更新日期 = Column(Date)
-
-# 按代码、日期排序，只保留最后一行
-class Delisting(Base):
-    """股票基本资料"""
-    上市代码 = Column(String(6), primary_key=True, index=True)
-    上市简称 = Column(String(10))
-    终止上市日期 = Column(DateTime)
-    转板日期 = Column(DateTime)
-    转板代码 = Column(String(6))
-    转板简称 = Column(String(10))
-
-
-class Suspend(Base):
-    """股票基本资料"""
-    上市代码 = Column(String(6), primary_key=True, index=True)
-    上市简称 = Column(String(10))
-    上市日期 = Column(DateTime)
-    暂停上市日期 = Column(DateTime)

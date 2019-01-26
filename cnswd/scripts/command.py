@@ -33,8 +33,9 @@ from .szsh.tct_gn import refresh as tct_gn_refresh
 from .szsh.ths_gn import update_gn_list
 from .szsh.trading_calendar import update_trading_calendars
 from .szsh.treasury import refresh_treasury
-from .szx import data_browse, thematic_statistics
+# from .szx import data_browse, thematic_statistics
 from .ts.core import refresh as ts_refresh
+from .db.core import refresh as db_refresh
 from .utils import create_tables, remove_temp_files
 
 logbook.set_datetime_format('local')
@@ -59,7 +60,7 @@ def stock():
 
 
 @stock.command()
-@click.option('--db_dir_name', type=click.Choice(['szx', 'info', 'szsh', 'ts']), help='数据库目录名称')
+@click.option('--db_dir_name', type=click.Choice(['dataBrowse', 'info', 'szsh', 'thematicStatistics']), help='数据库目录名称')
 @click.option('--rewrite/--no-rewrite', default=False, help='是否重写数据库')
 def create(db_dir_name, rewrite):
     """创建数据表"""
@@ -85,78 +86,86 @@ def ts_data(levels):
     """刷新股票数据"""
     ts_refresh(levels)
 
+# ====================数据搜索数据库==================== #
+
+@stock.command()
+@click.argument('levels', nargs=-1)
+def db_data(levels):
+    """刷新股票数据"""
+    db_refresh(levels)
+
 # ====================SZX数据库==================== #
 
 
-@stock.command()
-def szx_init():
-    """初始化SZX数据库"""
-    data_browse.init_szx()
+# @stock.command()
+# def szx_init():
+#     """初始化SZX数据库"""
+#     data_browse.init_szx()
 
 
-@stock.command()
-def szx_classify_bom():
-    """股票分类bom表"""
-    data_browse.update_classify_bom()
+# @stock.command()
+# def szx_classify_bom():
+#     """股票分类bom表"""
+#     data_browse.update_classify_bom()
 
 
-@stock.command()
-@click.option('--rewrite/--no-rewrite', default=False, help='是否重写股票基本信息')
-def szx_stock_info(rewrite):
-    """刷新股票基本信息"""
-    data_browse.update_stock_info(rewrite)
+# @stock.command()
+# @click.option('--rewrite/--no-rewrite', default=False, help='是否重写股票基本信息')
+# def szx_stock_info(rewrite):
+#     """刷新股票基本信息"""
+#     data_browse.update_stock_info(rewrite)
 
 
-@stock.command()
-def szx_stock_classify():
-    """刷新股票分类信息"""
-    data_browse.update_stock_classify()
+# @stock.command()
+# def szx_stock_classify():
+#     """刷新股票分类信息"""
+#     data_browse.update_stock_classify()
 
 
-@stock.command()
-def szx_bank_data():
-    """刷新金融业专项财务数据"""
-    data_browse.refresh_bank_data()
+# @stock.command()
+# def szx_bank_data():
+#     """刷新金融业专项财务数据"""
+#     data_browse.refresh_bank_data()
 
 
-@stock.command()
-@click.option('--levels', default=None, help='项目层级')
-def szx_data(levels):
-    """刷新股票数据"""
-    data_browse.refresh_stock_data(levels)
+# @stock.command()
+# @click.option('--levels', default=None, help='项目层级')
+# def szx_data(levels):
+#     """刷新股票数据"""
+#     data_browse.refresh_stock_data(levels)
 
 
-@stock.command()
-def szx_daily():
-    """每日刷新数据"""
-    thematic_statistics.refresh()
-    data_browse.daily_refresh()
+# @stock.command()
+# def szx_daily():
+#     """每日刷新数据"""
+#     thematic_statistics.refresh()
+#     data_browse.daily_refresh()
 
 
-@stock.command()
-def szx_weekly_basic():
-    """每周刷新基础信息"""
-    data_browse.update_stock_info(True)
-    data_browse.update_classify_bom()
-    data_browse.update_stock_classify()
+# @stock.command()
+# def szx_weekly_basic():
+#     """每周刷新基础信息"""
+#     data_browse.update_stock_info(True)
+#     data_browse.update_classify_bom()
+#     data_browse.update_stock_classify()
 
 
-@stock.command()
-def szx_weekly():
-    """每周刷新数据"""
-    data_browse.weekly_refresh()
+# @stock.command()
+# def szx_weekly():
+#     """每周刷新数据"""
+#     data_browse.weekly_refresh()
 
 
-@stock.command()
-def szx_monthly():
-    """每月刷新数据"""
-    data_browse.monthly_refresh()
+# @stock.command()
+# def szx_monthly():
+#     """每月刷新数据"""
+#     data_browse.monthly_refresh()
 
 
-@stock.command()
-def szx_quarterly():
-    """每季刷新数据"""
-    data_browse.quarterly_refresh()
+# @stock.command()
+# def szx_quarterly():
+#     """每季刷新数据"""
+#     data_browse.quarterly_refresh()
 
 
 # ====================INFO数据库==================== #

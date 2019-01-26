@@ -17,8 +17,8 @@ from .base import DATE_MAPS, MODEL_MAPS
 from .utils import fixed_data
 
 
-db_dir_name = 'ts'
-logger = logbook.Logger('深证信')
+db_dir_name = 'thematicStatistics'
+logger = logbook.Logger('专题统计')
 
 
 def _get_start_date(level, offset=1):
@@ -54,6 +54,7 @@ def _save_to_sql(level, df, e):
         session = get_session(db_dir_name)
         num = session.query(class_).filter(expr == e).delete(False)
         logger.notice(f"删除 表:{table_name} {num}行")
+        session.commit()
         session.close()
     df.to_sql(table_name, con=engine, if_exists='append', index=False)
     logger.notice(f"表：{table_name}, 添加 {len(df)} 条记录")
