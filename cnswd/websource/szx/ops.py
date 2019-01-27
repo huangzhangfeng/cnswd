@@ -184,7 +184,7 @@ def read_li_table(driver, li, tag_name):
     name, code, platetype = parse_classify_info(elem)
     df = get_classify_codes(driver)
     if len(df):
-        df.columns = ['股票代码', '股票简称']
+        df.columns = ['证券代码', '证券简称']
         df['分类名称'] = name
         df['分类编码'] = code
         df['平台类别'] = platetype

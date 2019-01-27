@@ -10,18 +10,18 @@ import time
 import logbook
 import pandas as pd
 from selenium.common.exceptions import (ElementNotInteractableException,
-                                        TimeoutException,
-                                        NoSuchElementException)
+                                        NoSuchElementException,
+                                        TimeoutException)
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
 from cnswd.sql.base import get_engine, get_session
-from cnswd.utils import ensure_list, loop_period_by, loop_codes
+from cnswd.sql.szx import Classification, ClassificationBom
+from cnswd.utils import ensure_list, loop_codes, loop_period_by
 from cnswd.websource.szx.data_browse import LEVEL_MAPS, DataBrowser
 
 from .base import DATE_MAPS, MODEL_MAPS
 from .utils import fixed_data
-
 
 db_dir_name = 'dataBrowse'
 logger = logbook.Logger('数据搜索')
@@ -188,3 +188,59 @@ def refresh(levles=None):
                     time.sleep(5)
                     api = DataBrowser(True)
     api.driver.quit()
+
+
+def update_classify_bom():
+    table = ClassificationBom.__tablename__
+    engine = get_engine(db_dir_name)
+    with DataBrowser(True) as api:
+        bom = api.classify_bom
+        bom.to_sql(table, engine, if_exists='replace')
+        api.logger.info(f'表：{table} 更新 {len(bom):>4}行')
+
+
+def delete_data_of(class_):
+    """删除表数据"""
+    session = get_session(db_dir_name)
+    num = session.query(class_).delete(False)
+    logger.notice(f"删除 表:{class_.__tablename__} {num}行")
+    session.commit()
+    session.close()
+
+
+def update_stock_classify():
+    """更新股票分类信息"""
+    table = Classification.__tablename__
+    api = DataBrowser(True)
+    levels = []
+    for nth in (1, 2, 3, 4, 5, 6):
+        levels.extend(api.get_levels_for(nth))
+    # CDR当前不可用
+    levels = [x for x in levels if x not in (
+        '6.6', '6.9') and api._is_end_level(x)]
+    done = []
+    dfs = []
+    for i in range(10):
+        to_do = sorted(list(set(levels) - set(done)))
+        if len(to_do) == 0:
+            break
+        api.logger.notice(f'第{i+1}次尝试，剩余分类层级数量:{len(to_do)}')
+        for level in sorted(to_do):
+            try:
+                df = api.get_classify_stock(level)
+                dfs.append(df)
+                done.append(level)
+            except Exception as e:
+                api.logger.notice(f"{e!r}")
+        time.sleep(0.5)
+
+    api.driver.quit()
+    # 完整下载后，才删除旧数据
+    delete_data_of(Classification)
+
+    for df in dfs:
+        if not df.empty:
+            df.to_sql(table, get_engine(db_dir_name),
+                      if_exists='append', index=False)
+            api.logger.info(
+                f'表：{table} 添加{len(df):>4}行')

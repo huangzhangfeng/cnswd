@@ -21,6 +21,8 @@ import logbook
 import pandas as pd
 from logbook.more import ColorizedStderrHandler
 
+from .db.core import refresh as db_refresh
+from .db.core import update_classify_bom, update_stock_classify
 from .infoes.disclosures import init_disclosure, refresh_disclosure
 from .infoes.news import append_historical_news, refresh_news
 from .szsh import cjmx
@@ -33,9 +35,7 @@ from .szsh.tct_gn import refresh as tct_gn_refresh
 from .szsh.ths_gn import update_gn_list
 from .szsh.trading_calendar import update_trading_calendars
 from .szsh.treasury import refresh_treasury
-# from .szx import data_browse, thematic_statistics
 from .ts.core import refresh as ts_refresh
-from .db.core import refresh as db_refresh
 from .utils import create_tables, remove_temp_files
 
 logbook.set_datetime_format('local')
@@ -88,12 +88,19 @@ def ts_data(levels):
 
 # ====================数据搜索数据库==================== #
 
+
 @stock.command()
 @click.argument('levels', nargs=-1)
 def db_data(levels):
     """刷新股票数据"""
     db_refresh(levels)
 
+
+@stock.command()
+def db_classify():
+    """刷新股票分类信息"""
+    update_classify_bom()
+    update_stock_classify()
 # ====================SZX数据库==================== #
 
 
