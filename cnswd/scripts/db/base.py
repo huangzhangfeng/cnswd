@@ -22,7 +22,6 @@ from cnswd.sql.szx import (IPO, ActualController,
                            StockInfo, TtmCashFlowStatement, TtmIncomeStatement)
 from cnswd.utils import sanitize_dates
 
-DT_FMT = r'%Y-%m-%d %H:%M:%S.%f'
 
 MODEL_MAPS = {
     '1.1':   StockInfo,

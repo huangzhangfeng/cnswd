@@ -165,6 +165,8 @@ def t_3_1(df):
                        "10日平均（MA10）": "MA10",
                        "30日平均（MA30）": "MA30",
                        "120日均价": "MA120",
+                       "股票代码": "证券代码",
+                       "股票简称": "证券简称",                       
                        "52周均价（360日）均价": "MA360"},
               inplace=True)
     df = _fix_col_name(df)
@@ -211,6 +213,9 @@ def t_7_4(df):
 
 
 def t_7_5(df):
+    df.rename(columns={"实际募资净额(人民币)": "实际募资净额_人民币",
+                       "实际募资净额(外币)": "实际募资净额_外币"},
+              inplace=True)
     df = _fix_col_name(df)
     return df
 

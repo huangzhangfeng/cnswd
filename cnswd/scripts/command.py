@@ -22,7 +22,7 @@ import pandas as pd
 from logbook.more import ColorizedStderrHandler
 
 from .db.core import refresh as db_refresh
-from .db.core import update_classify_bom, update_stock_classify
+from .db.core import update_stock_classify
 from .infoes.disclosures import init_disclosure, refresh_disclosure
 from .infoes.news import append_historical_news, refresh_news
 from .szsh import cjmx
@@ -99,80 +99,7 @@ def db_data(levels):
 @stock.command()
 def db_classify():
     """刷新股票分类信息"""
-    update_classify_bom()
     update_stock_classify()
-# ====================SZX数据库==================== #
-
-
-# @stock.command()
-# def szx_init():
-#     """初始化SZX数据库"""
-#     data_browse.init_szx()
-
-
-# @stock.command()
-# def szx_classify_bom():
-#     """股票分类bom表"""
-#     data_browse.update_classify_bom()
-
-
-# @stock.command()
-# @click.option('--rewrite/--no-rewrite', default=False, help='是否重写股票基本信息')
-# def szx_stock_info(rewrite):
-#     """刷新股票基本信息"""
-#     data_browse.update_stock_info(rewrite)
-
-
-# @stock.command()
-# def szx_stock_classify():
-#     """刷新股票分类信息"""
-#     data_browse.update_stock_classify()
-
-
-# @stock.command()
-# def szx_bank_data():
-#     """刷新金融业专项财务数据"""
-#     data_browse.refresh_bank_data()
-
-
-# @stock.command()
-# @click.option('--levels', default=None, help='项目层级')
-# def szx_data(levels):
-#     """刷新股票数据"""
-#     data_browse.refresh_stock_data(levels)
-
-
-# @stock.command()
-# def szx_daily():
-#     """每日刷新数据"""
-#     thematic_statistics.refresh()
-#     data_browse.daily_refresh()
-
-
-# @stock.command()
-# def szx_weekly_basic():
-#     """每周刷新基础信息"""
-#     data_browse.update_stock_info(True)
-#     data_browse.update_classify_bom()
-#     data_browse.update_stock_classify()
-
-
-# @stock.command()
-# def szx_weekly():
-#     """每周刷新数据"""
-#     data_browse.weekly_refresh()
-
-
-# @stock.command()
-# def szx_monthly():
-#     """每月刷新数据"""
-#     data_browse.monthly_refresh()
-
-
-# @stock.command()
-# def szx_quarterly():
-#     """每季刷新数据"""
-#     data_browse.quarterly_refresh()
 
 
 # ====================INFO数据库==================== #

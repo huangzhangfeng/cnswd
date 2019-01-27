@@ -163,9 +163,9 @@ class ShareholdingConcentration(Base):
 class Quote(Base):
     """3.1 行情数据"""
 
-    股票代码 = Column(String(6),
+    证券代码 = Column(String(6),
                   primary_key=True, nullable=False, index=True)
-    股票简称 = Column(String(10))
+    证券简称 = Column(String(10))
     交易日期 = Column(DateTime, primary_key=True, nullable=False)
     交易所 = Column(Text)
     今日开盘价 = Column(Float)
