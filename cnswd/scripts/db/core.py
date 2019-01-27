@@ -34,7 +34,7 @@ def delete_data_of(class_, code=None):
     if code is None:
         num = session.query(class_).delete(False)
     else:
-        num = session.query(class_).filter(class_.证券简称 == code).delete(False)
+        num = session.query(class_).filter(class_.证券代码 == code).delete(False)
     logger.notice(f"删除 表:{class_.__tablename__} {num}行")
     session.commit()
     session.close()

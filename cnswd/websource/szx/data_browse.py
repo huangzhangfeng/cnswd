@@ -69,9 +69,9 @@ LEVEL_MAPS = {
     '8.2.1': ('个股单季财务利润表', '#se1_sele', '.condition2 > select:nth-child(2)', 0.2),
     '8.2.2': ('个股单季现金流量表', '#se1_sele', '.condition2 > select:nth-child(2)', 0.2),
     '8.2.3': ('个股单季财务指标', '#se1_sele', '.condition2 > select:nth-child(2)', 0.2),
-    '8.3.1': ('个股报告期资产负债表', '#se1_sele', '.condition2 > select:nth-child(2)', 3.0),
-    '8.3.2': ('个股报告期利润表', '#se1_sele', '.condition2 > select:nth-child(2)', 1.0),
-    '8.3.3': ('个股报告期现金表', '#se1_sele', '.condition2 > select:nth-child(2)', 1.0),
+    '8.3.1': ('个股报告期资产负债表', '#se1_sele', '.condition2 > select:nth-child(2)', 0.2),
+    '8.3.2': ('个股报告期利润表', '#se1_sele', '.condition2 > select:nth-child(2)', 0.2),
+    '8.3.3': ('个股报告期现金表', '#se1_sele', '.condition2 > select:nth-child(2)', 0.2),
     '8.3.4': ('金融类资产负债表2007版', '#se1_sele', '.condition2 > select:nth-child(2)', 0.2),
     '8.3.5': ('金融类利润表2007版', '#se1_sele', '.condition2 > select:nth-child(2)', 0.2),
     '8.3.6': ('金融类现金流量表2007版', '#se1_sele', '.condition2 > select:nth-child(2)', 0.2),
@@ -300,7 +300,7 @@ class DataBrowser(SZXPage):
         self._change_data_item(level)
 
         # 日历元素位于屏幕中间位置
-        self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight / 2);")
+        # self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight / 2);")
 
         # 验证及设置期间
         if self.current_t1_css and (t1 is None):
