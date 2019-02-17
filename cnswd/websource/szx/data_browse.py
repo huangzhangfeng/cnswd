@@ -168,16 +168,24 @@ class DataBrowser(SZXPage):
         # 设置t1、t2定位格式
         self._set_date_css_by(level)
 
+    # def _choose_data_fields(self):
+    #     """全选字段"""
+    #     # 当更改数据项目时，自动将所选字段清除并复位
+    #     field = '.detail-cont-bottom'
+    #     chk_css = '{} label > i'.format(field)
+    #     chk = self.driver.find_element_by_css_selector(chk_css)
+    #     chk.click()
+    #     btn_css = '{} button[class="arrow-btn right"]'.format(field)
+    #     btn = self.driver.find_element_by_css_selector(btn_css)
+    #     btn.click()  # 添加后`chk`自动复位
+
     def _choose_data_fields(self):
         """全选字段"""
         # 当更改数据项目时，自动将所选字段清除并复位
-        field = '.detail-cont-bottom'
-        chk_css = '{} label > i'.format(field)
-        chk = self.driver.find_element_by_css_selector(chk_css)
-        chk.click()
-        btn_css = '{} button[class="arrow-btn right"]'.format(field)
-        btn = self.driver.find_element_by_css_selector(btn_css)
-        btn.click()  # 添加后`chk`自动复位
+        i_css = 'div.select-box:nth-child(2) > div:nth-child(1) > label:nth-child(1) > i:nth-child(2)'
+        self.driver.find_element_by_css_selector(i_css).click()
+        btn_css = 'div.arrows-box:nth-child(3) > div:nth-child(1) > button:nth-child(1)'
+        self.driver.find_element_by_css_selector(btn_css).click()
 
     def _set_date_css_by(self, level):
         """根据数据指标，确定t1与t2的css"""
