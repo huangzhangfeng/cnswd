@@ -2,11 +2,9 @@
 
 深证信数据搜索刷新脚本
 
-备注：
-    1. 需要确定网站数据更新时段。此时段容易出出错 18-19?
 """
 import time
-
+from functools import lru_cache
 import logbook
 import pandas as pd
 from selenium.common.exceptions import (ElementNotInteractableException,
@@ -16,7 +14,7 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
 from cnswd.sql.base import get_engine, get_session
-from cnswd.sql.szx import Classification, ClassificationBom
+from cnswd.sql.szx import Classification, ClassificationBom, StockInfo
 from cnswd.utils import ensure_list, loop_codes, loop_period_by
 from cnswd.websource.szx.data_browse import LEVEL_MAPS, DataBrowser
 
@@ -26,6 +24,29 @@ from .utils import fixed_data
 
 db_dir_name = 'dataBrowse'
 logger = logbook.Logger('数据搜索')
+B_2007_LEVELS = ('8.3.4', '8.3.5', '8.3.6')
+
+
+def default_ordered_levels():
+    """默认项目排序"""
+    y = ['6.1']
+    s_e = ['2.1', '2.2', '2.3', '2.4', '3.1',
+           '4.1'] + ['7.1', '7.2', '7.3', '7.4']
+    y_q = ['2.5', '5.1'] + [x for x in MODEL_MAPS.keys() if x.startswith('8')
+                            and (x not in B_2007_LEVELS)]
+    return ['1.1', '7.5'] + y + s_e + y_q
+
+
+def get_bank_stock():
+    """金融行业股票代码列表"""
+    session = get_session(db_dir_name)
+    codes = session.query(
+        StockInfo.证券代码
+    ).filter(
+        StockInfo.证监会一级行业名称 == '金融业'
+    ).all()
+    session.close()
+    return [x[0] for x in codes]
 
 
 def delete_data_of(class_, code=None):
@@ -40,6 +61,11 @@ def delete_data_of(class_, code=None):
     session.close()
 
 
+def _ipo_date(session, code):
+    class_ = MODEL_MAPS['1.1']
+    return session.query(class_.上市日期).filter(class_.证券代码 == code).one_or_none()
+
+
 def _get_start_date(level, code, offset=1):
     """开始刷新时间"""
     session = get_session(db_dir_name)
@@ -47,57 +73,51 @@ def _get_start_date(level, code, offset=1):
     expr = getattr(class_, DATE_MAPS[level][0])
     cond = class_.证券代码 == code
     t_end_date = session.query(func.max(expr)).filter(cond).scalar()
-    session.close()
     if t_end_date is None:
-        return pd.Timestamp(DATE_MAPS[level][2])
+        ipo = _ipo_date(session, code)
+        if ipo:
+            res = ipo[0]
+        else:
+            res = pd.Timestamp(DATE_MAPS[level][2])
     else:
         # 调整天数
-        return t_end_date + pd.Timedelta(days=offset)
+        res = t_end_date + pd.Timedelta(days=offset)
+    session.close()
+    return res
 
 
-def _need_repalce(level, e, freq):
-    today = pd.Timestamp('today')
-    limit = 90 if freq == 'Q' else 365 
-    if (today - e).days <= limit:
-        return True
-    else:
-        return False
-
-
-def _save_to_sql(level, df, e, code):
-    """对于部分项目，由于每日可能新增行，采用重写方式完成保存"""
+def _save_to_sql(level, df, code):
     class_ = MODEL_MAPS[level]
-    expr = getattr(class_, DATE_MAPS[level][0])
     table_name = class_.__tablename__
+    item = LEVEL_MAPS[level][0]
     engine = get_engine(db_dir_name)
-    freq = DATE_MAPS[level][1]
-    # 首先删除旧数据
-    if freq in ('Q', 'Y') and _need_repalce(level, e, freq):
-        session = get_session(db_dir_name)
-        num = session.query(class_).filter(expr == e, class_.证券代码 == code).delete(False)
-        logger.notice(f"删除 表:{table_name} {num}行")
-        session.commit()
-        session.close()
     df.to_sql(table_name, con=engine, if_exists='append', index=False)
-    logger.notice(f"表：{table_name}, 添加 {len(df)} 条记录")
+    logger.notice(f"{item}, 股票代码 {code} 添加 {len(df)} 条记录")
+
+
+def _delete_recent_quotes(start, code):
+    # 删除最近的日线数据
+    # 融资融券数据导致不一致，需要清理旧数据
+    start = start - pd.Timedelta(days=7)
+    class_ = MODEL_MAPS['3.1']
+    expr = getattr(class_, DATE_MAPS['3.1'][0])
+    table_name = class_.__tablename__
+    session = get_session(db_dir_name)
+    num = session.query(class_).filter(
+        expr >= start, class_.证券代码 == code).delete(False)
+    logger.notice(f"删除 表:{table_name} 股票代码：{code} {num}行")
+    session.commit()
+    session.close()
+    return start
 
 
 def _loop_by(api, level, code):
     start = _get_start_date(level, code)
     if level == '3.1':
-        # 融资融券数据导致不一致，需要清理旧数据
-        start = start - pd.Timedelta(days=7)
-        class_ = MODEL_MAPS[level]
-        expr = getattr(class_, DATE_MAPS[level][0])
-        table_name = class_.__tablename__
-        session = get_session(db_dir_name)
-        num = session.query(class_).filter(
-            expr >= start, class_.证券代码 == code).delete(False)
-        logger.notice(f"删除 表:{table_name} 股票代码：{code} {num}行")
-        session.commit()
-        session.close()
+        start = _delete_recent_quotes(start, code)
     today = pd.Timestamp('today')
     freq = DATE_MAPS[level][1]
+    # 单只股票，期间 = 数据库最后一日 ~ 今日
     if freq == 'D':
         t1 = start.strftime(r'%Y-%m-%d')
         t2 = today.strftime(r'%Y-%m-%d')
@@ -105,21 +125,28 @@ def _loop_by(api, level, code):
         if df.empty:
             return
         df = fixed_data(df, level)
-        _save_to_sql(level, df, start, code)
+        _save_to_sql(level, df, code)
     else:
-        ps = loop_period_by(start, today, freq)
-        for _, e in ps:
+        if level == '3.1':
+            ps = loop_period_by(start, today, freq, False)
+        else:
+            ps = loop_period_by(start, today, freq)
+        for s, e in ps:
             if freq == 'Y':
-                t1 = e.year
+                t1 = str(e.year)
                 t2 = None
             elif freq == 'Q':
-                t1 = e.year
+                t1 = str(e.year)
                 t2 = e.quarter
+            elif freq == 'M':
+                t1 = s.strftime(r'%Y-%m-%d')
+                t2 = e.strftime(r'%Y-%m-%d')
             df = api.query(level, code, t1, t2)
             if df.empty:
                 continue
             df = fixed_data(df, level)
-            _save_to_sql(level, df, e, code)
+            _save_to_sql(level, df, code)
+            del df
 
 
 def _replace(api, level, code):
@@ -158,7 +185,6 @@ def _valid_level(to_do):
 
 
 def _ipo(api, codes):
-    # 当前貌似不支持多代码获取数据，临时措施
     codes = sorted(codes)
     dfs = []
     for code in codes:
@@ -173,30 +199,55 @@ def _ipo(api, codes):
     api.logger.notice(f"{'更新'} 表{table_name}, 共 {len(to_add)} 条记录")
 
 
-def refresh(levles=None):
+@lru_cache(None)
+def _existed_code(level):
+    class_ = MODEL_MAPS[level]
+    session = get_session(db_dir_name)
+    res = session.query(class_.证券代码).all()
+    session.close()
+    return [x[0] for x in res]
+
+
+def refresh(update=False, levles=None, retry=3):
     """专题统计项目数据刷新"""
     if levles is None or len(levles) == 0:
-        to_do = list(DATE_MAPS.keys())
+        to_do = default_ordered_levels()
     else:
         to_do = ensure_list(levles)
         _valid_level(to_do)
     done = {}
     api = DataBrowser(True)
     codes = api.get_all_codes()
+    b_codes = get_bank_stock()
     # 测试代码
     # codes = ['000001', '000002', '000007', '300467', '300483', '603633', '603636',
     #          '000333', '600017', '600645', '603999']
     for code in codes:
-        for i in range(10):
+        for i in range(retry):
             for level in to_do:
                 key = ','.join([level, code])
+                # 本地数据库已经存在的股票代码，其基本信息、IPO表如不需要更新，则跳过
+                if not update and level in ('1.1', '7.5') and code in _existed_code(level):
+                    done[key] = True
+                if level in B_2007_LEVELS and code not in b_codes:
+                    done[key] = True
                 if done.get(key):
+                    # api.logger.info(f'跳过：{LEVEL_MAPS[level][0]} {code}')
                     continue
                 api.logger.notice(f'第{i+1}次尝试：{LEVEL_MAPS[level][0]}')
                 try:
                     _refresh(api, level, code)
                     done[key] = True
-                except (IntegrityError, ElementNotInteractableException, NoSuchElementException, TimeoutException, ValueError, ConnectionError) as e:
+                except IntegrityError as e:
+                    if level.startswith('8.') or level == '6.1':
+                        done[key] = True
+                    else:
+                        done[key] = False
+                        api.logger.notice(f'{LEVEL_MAPS[level][0]} {code} \n {e!r}')
+                        api.driver.quit()
+                        time.sleep(5)
+                        api = DataBrowser(True)                        
+                except (ElementNotInteractableException, NoSuchElementException, TimeoutException, ValueError, ConnectionError) as e:
                     api.logger.notice(
                         f'{LEVEL_MAPS[level][0]} {code} \n {e!r}')
                     done[key] = False

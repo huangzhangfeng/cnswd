@@ -98,12 +98,14 @@ def _normalize_col_name(col):
     if '万股' in res:
         res = res.replace('万股', '')
     res = res.replace('（', '_').replace('）', '')
+    res = res.replace('(', '_').replace(')', '')
     res = res.replace('：', '_')
     res = res.replace(':', '_')
     res = res.replace('/', '_')
     res = res.replace('Ａ', 'A')
     res = res.replace('Ｂ', 'B')
     res = res.replace('Ｈ', 'H')
+    res = res.replace(' ', '')
     res = res.replace('，', '_')
     res = res.replace('、', '_')
     res = res.replace('-', '_')
@@ -166,7 +168,7 @@ def t_3_1(df):
                        "30日平均（MA30）": "MA30",
                        "120日均价": "MA120",
                        "股票代码": "证券代码",
-                       "股票简称": "证券简称",                       
+                       "股票简称": "证券简称",
                        "52周均价（360日）均价": "MA360"},
               inplace=True)
     df = _fix_col_name(df)
@@ -183,8 +185,18 @@ def t_5_1(df):
 
 
 def t_6_1(df):
+    df.rename(columns={"股票代码": "证券代码",
+                       "股票简称": "证券简称",
+                       "分配股本基数（董 ）万股": "分配股本基数_董",
+                       "分配股本基数（股 ）万股": "分配股本基数",
+                       "派息金额(人民币 万元)": "派息金额_人民币"},
+              inplace=True)
     # 首先修复数量单位
-    df = _fix_unit(df, None)
+    units = {'送股数量(万股)': 10000, '转增数量(万股)': 10000,
+             '派息金额(人民币 万元)': 10000, '送转前总股本(万股)': 10000, '送转后总股本(万股)': 10000,
+             '送转前流通股本(万股)': 10000, '送转后流通股本(万股)': 10000, '分配股本基数（董 ）万股': 10000,
+             '分配股本基数（股 ）万股': 10000}
+    df = _fix_unit(df, units)
     # 然后才能修复列名称
     df = _fix_col_name(df)
     return df
@@ -195,7 +207,6 @@ def t_7_1(df):
 
 
 def t_7_2(df):
-    # 然后才能修复列名称
     df = _fix_col_name(df)
     return df
 
@@ -283,6 +294,7 @@ def t_8_2_3(df):
 
 def t_8_3_1(df):
     df.rename(columns={"所有者权益（或股东权益）合计": "所有者权益或股东权益合计",
+                       "实收资本（或股本）": "实收资本或股本",
                        "负债和所有者（或股东权益）合计": "负债和所有者或股东权益合计"},
               inplace=True)
     df = _fix_col_name(df)
@@ -360,9 +372,9 @@ def t_8_3_6(df):
 def t_8_4_1(df):
     df.rename(columns={"净资产收益率(扣除非经常性损益)": "净资产收益率_扣除非经常性损益",
                        "净资产收益率-加权(扣除非经常性损益)": "净资产收益率_加权_扣除非经常性损益",
-                       "净资产收益率.1":"净资产收益率_1"},
+                       "净资产收益率.1": "净资产收益率_1"},
               inplace=True)
-    df = _fix_col_name(df)    
+    df = _fix_col_name(df)
     return df
 
 

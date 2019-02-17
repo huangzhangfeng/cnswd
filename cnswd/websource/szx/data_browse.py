@@ -58,7 +58,7 @@ LEVEL_MAPS = {
     '3.1':   ('行情数据', 'input.form-control:nth-child(1)', 'input.date:nth-child(2)', 0.2),
     '4.1':   ('投资评级', 'input.form-control:nth-child(1)', 'input.date:nth-child(2)', 0.2),
     '5.1':   ('上市公司业绩预告', '#se1_sele', '.condition2 > select:nth-child(2)', 0.2),
-    '6.1':   ('分红指标', '.condition2 > select:nth-child(2)', None),
+    '6.1':   ('分红指标', '#se2_sele', None, 0.2),
     '7.1':   ('公司增发股票预案', 'input.form-control:nth-child(1)', 'input.date:nth-child(2)', 0.2),
     '7.2':   ('公司增发股票实施方案', 'input.date:nth-child(1)', 'input.form-control:nth-child(2)', 0.2),
     '7.3':   ('公司配股预案', 'input.form-control:nth-child(1)', 'input.date:nth-child(2)', 0.2),

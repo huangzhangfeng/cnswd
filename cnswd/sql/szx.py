@@ -272,7 +272,7 @@ class Dividend(Base):
     派息比例_港币 = Column(Float)
     送股数量 = Column(Float)
     转增数量 = Column(Float)
-    派息金额人民币万元 = Column(Float)
+    派息金额_人民币 = Column(Float)
     A股股权登记日 = Column(DateTime)
     B股股权登记日 = Column(DateTime)
     A股除权日 = Column(DateTime)
@@ -480,12 +480,13 @@ class SharePlacementPlan(Base):
 
 class SharePlacementImplementation(Base):
     """7.4 公司配股实施方案"""
+    __table_args__ = {'sqlite_autoincrement': True}
 
-    证券代码 = Column(String(6),
-                  primary_key=True, nullable=False, index=True)
+    序号 = Column(Integer, primary_key=True, index=True)
+    证券代码 = Column(String(6),nullable=False, index=True)
     证券简称 = Column(Text(10))
     机构名称 = Column(Text)
-    公告日期 = Column(DateTime, primary_key=True, nullable=False, index=True)
+    公告日期 = Column(DateTime, nullable=False, index=True)
     股票类别编码 = Column(BigInteger)
     股票类别 = Column(Text)
     配股比例 = Column(Float)

@@ -90,10 +90,12 @@ def ts_data(levels):
 
 
 @stock.command()
+@click.option('--update/--no-update', default=False, help='是否更新股票信息或IPO')
+@click.option('--retry', default=3, help='尝试次数')
 @click.argument('levels', nargs=-1)
-def db_data(levels):
+def db_data(update, levels, retry):
     """刷新股票数据"""
-    db_refresh(levels)
+    db_refresh(update, levels, retry)
 
 
 @stock.command()
