@@ -208,8 +208,57 @@ def _existed_code(level):
     return [x[0] for x in res]
 
 
+# def refresh(update=False, levles=None, retry=3):
+#     """数据搜索数据刷新"""
+#     if levles is None or len(levles) == 0:
+#         to_do = default_ordered_levels()
+#     else:
+#         to_do = ensure_list(levles)
+#         _valid_level(to_do)
+#     done = {}
+#     api = DataBrowser(True)
+#     codes = api.get_all_codes()
+#     b_codes = get_bank_stock()
+#     # 测试代码
+#     # codes = ['000001', '000002', '000007', '300467', '300483', '603633', '603636',
+#     #          '000333', '600017', '600645', '603999']
+#     for code in codes:
+#         for i in range(retry):
+#             for level in to_do:
+#                 key = ','.join([level, code])
+#                 # 本地数据库已经存在的股票代码，其基本信息、IPO表如不需要更新，则跳过
+#                 if not update and level in ('1.1', '7.5') and code in _existed_code(level):
+#                     done[key] = True
+#                 if level in B_2007_LEVELS and code not in b_codes:
+#                     done[key] = True
+#                 if done.get(key):
+#                     # api.logger.info(f'跳过：{LEVEL_MAPS[level][0]} {code}')
+#                     continue
+#                 api.logger.notice(f'第{i+1}次尝试：{LEVEL_MAPS[level][0]}')
+#                 try:
+#                     _refresh(api, level, code)
+#                     done[key] = True
+#                 except IntegrityError as e:
+#                     if level.startswith('8.') or level == '6.1':
+#                         done[key] = True
+#                     else:
+#                         done[key] = False
+#                         api.logger.notice(f'{LEVEL_MAPS[level][0]} {code} \n {e!r}')
+#                         api.driver.quit()
+#                         time.sleep(5)
+#                         api = DataBrowser(True)                        
+#                 except (ElementNotInteractableException, NoSuchElementException, TimeoutException, ValueError, ConnectionError) as e:
+#                     api.logger.notice(
+#                         f'{LEVEL_MAPS[level][0]} {code} \n {e!r}')
+#                     done[key] = False
+#                     api.driver.quit()
+#                     time.sleep(5)
+#                     api = DataBrowser(True)
+#     api.driver.quit()
+
+
 def refresh(update=False, levles=None, retry=3):
-    """专题统计项目数据刷新"""
+    """数据搜索数据刷新"""
     if levles is None or len(levles) == 0:
         to_do = default_ordered_levels()
     else:
@@ -217,19 +266,21 @@ def refresh(update=False, levles=None, retry=3):
         _valid_level(to_do)
     done = {}
     api = DataBrowser(True)
-    codes = api.get_all_codes()
+    all_codes = api.get_all_codes()
     b_codes = get_bank_stock()
     # 测试代码
     # codes = ['000001', '000002', '000007', '300467', '300483', '603633', '603636',
     #          '000333', '600017', '600645', '603999']
-    for code in codes:
-        for i in range(retry):
-            for level in to_do:
+    for i in range(retry):
+        for level in to_do:
+            if level in B_2007_LEVELS:
+                codes =  b_codes
+            else:
+                codes =  all_codes
+            for code in codes:
                 key = ','.join([level, code])
                 # 本地数据库已经存在的股票代码，其基本信息、IPO表如不需要更新，则跳过
                 if not update and level in ('1.1', '7.5') and code in _existed_code(level):
-                    done[key] = True
-                if level in B_2007_LEVELS and code not in b_codes:
                     done[key] = True
                 if done.get(key):
                     # api.logger.info(f'跳过：{LEVEL_MAPS[level][0]} {code}')
