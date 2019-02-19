@@ -3,11 +3,18 @@
 深证信数据搜索刷新脚本
 
 """
+import math
+import os
 import time
-from functools import lru_cache
+from functools import lru_cache, partial
+from multiprocessing import Pool
+
 import logbook
+import numpy as np
 import pandas as pd
 from selenium.common.exceptions import (ElementNotInteractableException,
+                                        WebDriverException,
+                                        UnexpectedAlertPresentException,
                                         NoSuchElementException,
                                         TimeoutException)
 from sqlalchemy import func
@@ -25,16 +32,32 @@ from .utils import fixed_data
 db_dir_name = 'dataBrowse'
 logger = logbook.Logger('数据搜索')
 B_2007_LEVELS = ('8.3.4', '8.3.5', '8.3.6')
+max_worker = max(1, int(os.cpu_count()/2))
 
 
-def default_ordered_levels():
-    """默认项目排序"""
+def batch_codes(iterable):
+    """
+    切分可迭代对象，返回长度max_worker*4批次列表
+
+    说明：
+        1. 初始化浏览器很耗时，且占有大量内存
+        2. 切分目标主要是平衡速度与稳定性
+    """
+    # 随机打乱原来的元素顺序
+    np.random.shuffle(iterable)
+    min_batch_num = max_worker * 4
+    batch_num = max(min_batch_num, math.ceil(len(iterable) / max_worker / 4))
+    return loop_codes(iterable, batch_num)
+
+
+def default_ts_levels():
+    """默认时间序列项目列表"""
     y = ['6.1']
     s_e = ['2.1', '2.2', '2.3', '2.4', '3.1',
            '4.1'] + ['7.1', '7.2', '7.3', '7.4']
     y_q = ['2.5', '5.1'] + [x for x in MODEL_MAPS.keys() if x.startswith('8')
                             and (x not in B_2007_LEVELS)]
-    return ['1.1', '7.5'] + y + s_e + y_q
+    return y + s_e + y_q
 
 
 def get_bank_stock():
@@ -73,6 +96,7 @@ def _get_start_date(level, code, offset=1):
     expr = getattr(class_, DATE_MAPS[level][0])
     cond = class_.证券代码 == code
     t_end_date = session.query(func.max(expr)).filter(cond).scalar()
+    l_end_date = session.query(func.max(class_.last_refresh_time)).filter(cond).scalar()
     if t_end_date is None:
         ipo = _ipo_date(session, code)
         if ipo:
@@ -80,8 +104,12 @@ def _get_start_date(level, code, offset=1):
         else:
             res = pd.Timestamp(DATE_MAPS[level][2])
     else:
-        # 调整天数
-        res = t_end_date + pd.Timedelta(days=offset)
+        if level.startswith('8.'):
+            res = t_end_date + pd.Timedelta(days=offset)
+        else:
+            end_date = max(t_end_date, l_end_date)
+            # 调整天数
+            res = end_date + pd.Timedelta(days=offset)
     session.close()
     return res
 
@@ -91,6 +119,8 @@ def _save_to_sql(level, df, code):
     table_name = class_.__tablename__
     item = LEVEL_MAPS[level][0]
     engine = get_engine(db_dir_name)
+    if level in default_ts_levels():
+        df['last_refresh_time'] = pd.Timestamp('now')
     df.to_sql(table_name, con=engine, if_exists='append', index=False)
     logger.notice(f"{item}, 股票代码 {code} 添加 {len(df)} 条记录")
 
@@ -170,7 +200,6 @@ def _refresh(api, level, code):
         api {api} -- api
         level {str} -- 项目
         codes {str} -- 股票代码列表
-        b {int} -- 批号
     """
     if DATE_MAPS[level][1] is None:
         _replace(api, level, code)
@@ -208,84 +237,60 @@ def _existed_code(level):
     return [x[0] for x in res]
 
 
-# def refresh(update=False, levles=None, retry=3):
-#     """数据搜索数据刷新"""
-#     if levles is None or len(levles) == 0:
-#         to_do = default_ordered_levels()
-#     else:
-#         to_do = ensure_list(levles)
-#         _valid_level(to_do)
-#     done = {}
-#     api = DataBrowser(True)
-#     codes = api.get_all_codes()
-#     b_codes = get_bank_stock()
-#     # 测试代码
-#     # codes = ['000001', '000002', '000007', '300467', '300483', '603633', '603636',
-#     #          '000333', '600017', '600645', '603999']
-#     for code in codes:
-#         for i in range(retry):
-#             for level in to_do:
-#                 key = ','.join([level, code])
-#                 # 本地数据库已经存在的股票代码，其基本信息、IPO表如不需要更新，则跳过
-#                 if not update and level in ('1.1', '7.5') and code in _existed_code(level):
-#                     done[key] = True
-#                 if level in B_2007_LEVELS and code not in b_codes:
-#                     done[key] = True
-#                 if done.get(key):
-#                     # api.logger.info(f'跳过：{LEVEL_MAPS[level][0]} {code}')
-#                     continue
-#                 api.logger.notice(f'第{i+1}次尝试：{LEVEL_MAPS[level][0]}')
-#                 try:
-#                     _refresh(api, level, code)
-#                     done[key] = True
-#                 except IntegrityError as e:
-#                     if level.startswith('8.') or level == '6.1':
-#                         done[key] = True
-#                     else:
-#                         done[key] = False
-#                         api.logger.notice(f'{LEVEL_MAPS[level][0]} {code} \n {e!r}')
-#                         api.driver.quit()
-#                         time.sleep(5)
-#                         api = DataBrowser(True)                        
-#                 except (ElementNotInteractableException, NoSuchElementException, TimeoutException, ValueError, ConnectionError) as e:
-#                     api.logger.notice(
-#                         f'{LEVEL_MAPS[level][0]} {code} \n {e!r}')
-#                     done[key] = False
-#                     api.driver.quit()
-#                     time.sleep(5)
-#                     api = DataBrowser(True)
-#     api.driver.quit()
-
-
-def refresh(update=False, levles=None, retry=3):
-    """数据搜索数据刷新"""
-    if levles is None or len(levles) == 0:
-        to_do = default_ordered_levels()
-    else:
-        to_do = ensure_list(levles)
-        _valid_level(to_do)
+def _refresh_info(codes, update, retry):
+    to_do = ['1.1', '7.5']
     done = {}
     api = DataBrowser(True)
-    all_codes = api.get_all_codes()
-    b_codes = get_bank_stock()
-    # 测试代码
-    # codes = ['000001', '000002', '000007', '300467', '300483', '603633', '603636',
-    #          '000333', '600017', '600645', '603999']
-    for i in range(retry):
+    for _ in range(retry):
         for level in to_do:
-            if level in B_2007_LEVELS:
-                codes =  b_codes
-            else:
-                codes =  all_codes
             for code in codes:
                 key = ','.join([level, code])
                 # 本地数据库已经存在的股票代码，其基本信息、IPO表如不需要更新，则跳过
-                if not update and level in ('1.1', '7.5') and code in _existed_code(level):
+                if not update and code in _existed_code(level):
                     done[key] = True
                 if done.get(key):
-                    # api.logger.info(f'跳过：{LEVEL_MAPS[level][0]} {code}')
                     continue
-                api.logger.notice(f'第{i+1}次尝试：{LEVEL_MAPS[level][0]}')
+                try:
+                    _refresh(api, level, code)
+                    done[key] = True
+                except (WebDriverException, ElementNotInteractableException, NoSuchElementException, UnexpectedAlertPresentException,
+                        TimeoutException, ValueError, ConnectionError) as e:
+                    api.logger.notice(
+                        f'{LEVEL_MAPS[level][0]} {code} \n {e!r}')
+                    done[key] = False
+                    api.driver.quit()
+                    time.sleep(5)
+                    api = DataBrowser(True)
+    api.driver.quit()
+
+
+def refresh_info(codes=None, update=False, retry=3):
+    """刷新股票基本信息及IPO数据"""
+    if codes is None:
+        api = DataBrowser(True)
+        all_codes = api.get_all_codes()
+        api.driver.quit()
+    else:
+        all_codes = ensure_list(codes)
+    b_codes = batch_codes(all_codes)
+    func = partial(_refresh_info, update=update, retry=retry)
+    with Pool(max_worker) as p:
+        p.map(func, b_codes)
+
+
+def _refresh_data(codes, levles, retry, bank_codes):
+    """数据搜索数据刷新"""
+    done = {}
+    api = DataBrowser(True)
+    for _ in range(retry):
+        for level in levles:
+            for code in codes:
+                key = ','.join([level, code])
+                # 刷新银行业财务数据时，非银行代码跳过
+                if level in B_2007_LEVELS and code not in bank_codes:
+                    done[key] = True
+                if done.get(key):
+                    continue
                 try:
                     _refresh(api, level, code)
                     done[key] = True
@@ -294,11 +299,13 @@ def refresh(update=False, levles=None, retry=3):
                         done[key] = True
                     else:
                         done[key] = False
-                        api.logger.notice(f'{LEVEL_MAPS[level][0]} {code} \n {e!r}')
+                        api.logger.notice(
+                            f'{LEVEL_MAPS[level][0]} {code} \n {e!r}')
                         api.driver.quit()
                         time.sleep(5)
-                        api = DataBrowser(True)                        
-                except (ElementNotInteractableException, NoSuchElementException, TimeoutException, ValueError, ConnectionError) as e:
+                        api = DataBrowser(True)
+                except (WebDriverException, ElementNotInteractableException, NoSuchElementException, UnexpectedAlertPresentException,
+                        TimeoutException, ValueError, ConnectionError) as e:
                     api.logger.notice(
                         f'{LEVEL_MAPS[level][0]} {code} \n {e!r}')
                     done[key] = False
@@ -306,6 +313,27 @@ def refresh(update=False, levles=None, retry=3):
                     time.sleep(5)
                     api = DataBrowser(True)
     api.driver.quit()
+
+
+def refresh_data(codes=None, levles=None, retry=3):
+    """数据搜索数据刷新"""
+    bank_codes = get_bank_stock()
+    if codes is None:
+        api = DataBrowser(True)
+        all_codes = api.get_all_codes()
+        api.driver.quit()
+    else:
+        all_codes = ensure_list(codes)
+    b_codes = batch_codes(all_codes)
+    if levles is None or len(levles) == 0:
+        to_do = default_ts_levels()
+    else:
+        to_do = ensure_list(levles)
+        _valid_level(to_do)
+    func = partial(_refresh_data, levles=to_do,
+                   retry=retry, bank_codes=bank_codes)
+    with Pool(max_worker) as p:
+        p.map(func, b_codes)
 
 
 def _update_classify_bom(api):

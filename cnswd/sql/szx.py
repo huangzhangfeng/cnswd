@@ -2,7 +2,7 @@ from sqlalchemy import (BigInteger, Boolean, Column, Date, DateTime, Float,
                         ForeignKey, Integer, String, Text)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
-
+import pandas as pd
 from .common import CommonMixin
 
 # 增强基本类
@@ -46,6 +46,7 @@ class ActualController(Base):
     直接控制人ID = Column(Text)
     直接控制人名称 = Column(Text)
     实际控制人类型 = Column(Text)
+    last_refresh_time = Column(DateTime, default=pd.Timestamp('now'))
 
 
 class CompanyShareChange(Base):
@@ -96,6 +97,7 @@ class CompanyShareChange(Base):
     其中_限售B股 = Column(Float)
     其中_限售H股 = Column(Float)
     最新记录标识 = Column(Integer)
+    last_refresh_time = Column(DateTime, default=pd.Timestamp('now'))
 
 
 class ExecutivesShareChange(Base):
@@ -120,6 +122,7 @@ class ExecutivesShareChange(Base):
     成交均价 = Column(Text)
     期末市值 = Column(Float)
     持股变动原因 = Column(Text)
+    last_refresh_time = Column(DateTime, default=pd.Timestamp('now'))
 
 
 class ShareholderShareChange(Base):
@@ -139,6 +142,7 @@ class ShareholderShareChange(Base):
     变动数量占总股本比例 = Column(Float)
     变动后占比 = Column(Float)
     增_减持价格上限 = Column(Text)
+    last_refresh_time = Column(DateTime, default=pd.Timestamp('now'))
 
 
 class ShareholdingConcentration(Base):
@@ -158,6 +162,7 @@ class ShareholdingConcentration(Base):
     股东持股数量 = Column(BigInteger)
     股东持股比例 = Column(Float)
     股东持股比例比上报告期增减 = Column(Float)
+    last_refresh_time = Column(DateTime, default=pd.Timestamp('now'))
 
 
 class Quote(Base):
@@ -210,6 +215,7 @@ class Quote(Base):
     股息率TTM = Column(Float)
     PEG = Column(Float)
     EV_EBITDA = Column(Float)
+    last_refresh_time = Column(DateTime, default=pd.Timestamp('now'))
 
 
 class InvestmentRating(Base):
@@ -229,6 +235,7 @@ class InvestmentRating(Base):
     前一次投资评级 = Column(Text)
     目标价格_下限 = Column(Float)
     目标价格_上限 = Column(Float)
+    last_refresh_time = Column(DateTime, default=pd.Timestamp('now'))
 
 
 class PerformanceForecaste(Base):
@@ -248,6 +255,7 @@ class PerformanceForecaste(Base):
     本期净利润上限 = Column(Float)
     本期净利润增减幅下限 = Column(Float)
     本期净利润增减幅上限 = Column(Float)
+    last_refresh_time = Column(DateTime, default=pd.Timestamp('now'))
 
 
 class Dividend(Base):
@@ -295,6 +303,7 @@ class Dividend(Base):
     B股转赠股份到帐日 = Column(DateTime)
     B股送红股到帐日 = Column(DateTime)
     汇率 = Column(Float)
+    last_refresh_time = Column(DateTime, default=pd.Timestamp('now'))
 
 
 class AdditionalStockPlan(Base):
@@ -324,6 +333,7 @@ class AdditionalStockPlan(Base):
     方案状态 = Column(Text)
     终止公告日期 = Column(DateTime)
     记录标识 = Column(BigInteger, primary_key=True, nullable=False)
+    last_refresh_time = Column(DateTime, default=pd.Timestamp('now'))
 
 
 class AdditionalStockImplementation(Base):
@@ -445,6 +455,7 @@ class AdditionalStockImplementation(Base):
     网下中签率公布及退款日 = Column(DateTime)
     网下申购定金到帐日 = Column(DateTime)
     记录标识 = Column(BigInteger, primary_key=True, index=True)
+    last_refresh_time = Column(DateTime, default=pd.Timestamp('now'))
 
 
 class SharePlacementPlan(Base):
@@ -476,6 +487,7 @@ class SharePlacementPlan(Base):
     配股获准公告日期 = Column(DateTime)
     变更说明 = Column(Text)
     记录标识 = Column(BigInteger)
+    last_refresh_time = Column(DateTime, default=pd.Timestamp('now'))
 
 
 class SharePlacementImplementation(Base):
@@ -540,6 +552,7 @@ class SharePlacementImplementation(Base):
     发行方式编码 = Column(Text)
     委托单位 = Column(Text)
     记录标识 = Column(BigInteger)
+    last_refresh_time = Column(DateTime, default=pd.Timestamp('now'))
 
 
 class IPO(Base):
@@ -672,6 +685,7 @@ class IPO(Base):
     IPO阶段进展状态 = Column(Text)
     IPO阶段进展状态编码 = Column(Text)
     记录标识 = Column(Text)
+    last_refresh_time = Column(DateTime, default=pd.Timestamp('now'))
 
 
 class TtmIncomeStatement(Base):
@@ -730,6 +744,7 @@ class TtmIncomeStatement(Base):
     分保费用 = Column(Float)
     其中_非流动资产处置利得 = Column(Float)
     其他收益 = Column(Float)
+    last_refresh_time = Column(DateTime, default=pd.Timestamp('now'))
 
 
 class TtmCashFlowStatement(Base):
@@ -828,6 +843,7 @@ class TtmCashFlowStatement(Base):
     其中_子公司吸收少数股东投资收到的现金 = Column(Float)
     其中_子公司支付给少数股东的股利_利润 = Column(Float)
     投资性房地产的折旧及摊销 = Column(Float)
+    last_refresh_time = Column(DateTime, default=pd.Timestamp('now'))
 
 
 class QuarterlyIncomeStatement(Base):
@@ -886,6 +902,7 @@ class QuarterlyIncomeStatement(Base):
     分保费用 = Column(Float)
     其中_非流动资产处置利得 = Column(Float)
     其他收益 = Column(Float)
+    last_refresh_time = Column(DateTime, default=pd.Timestamp('now'))
 
 
 class QuarterlyCashFlowStatement(Base):
@@ -984,6 +1001,7 @@ class QuarterlyCashFlowStatement(Base):
     其中_子公司吸收少数股东投资收到的现金 = Column(Float)
     其中_子公司支付给少数股东的股利_利润 = Column(Float)
     投资性房地产的折旧及摊销 = Column(Float)
+    last_refresh_time = Column(DateTime, default=pd.Timestamp('now'))
 
 
 class QuarterlyFinancialIndicator(Base):
@@ -1045,6 +1063,7 @@ class QuarterlyFinancialIndicator(Base):
     应收账款占比 = Column(Float)
     存货占比 = Column(Float)
     年化期间费用毛利比 = Column(Float)
+    last_refresh_time = Column(DateTime, default=pd.Timestamp('now'))
 
 
 class PeriodlyBalanceSheet(Base):
@@ -1171,6 +1190,7 @@ class PeriodlyBalanceSheet(Base):
     所有者权益或股东权益合计 = Column(Float)
     负债和所有者或股东权益合计 = Column(Float)
     备注 = Column(Text)
+    last_refresh_time = Column(DateTime, default=pd.Timestamp('now'))
 
 
 class PeriodlyIncomeStatement(Base):
@@ -1239,6 +1259,7 @@ class PeriodlyIncomeStatement(Base):
     其中_归属于母公司 = Column(Float)
     其中_归属于少数股东 = Column(Float)
     备注 = Column(Text)
+    last_refresh_time = Column(DateTime, default=pd.Timestamp('now'))
 
 
 class PeriodlyCashFlowStatement(Base):
@@ -1337,6 +1358,7 @@ class PeriodlyCashFlowStatement(Base):
     其中_子公司吸收少数股东投资收到的现金 = Column(Float)
     其中_子公司支付给少数股东的股利_利润 = Column(Float)
     投资性房地产的折旧及摊销 = Column(Float)
+    last_refresh_time = Column(DateTime, default=pd.Timestamp('now'))
 
 
 class PeriodlyBalanceSheet2007(Base):
@@ -1450,6 +1472,7 @@ class PeriodlyBalanceSheet2007(Base):
     少数股东权益 = Column(Float)
     所有者权益或股东权益合计 = Column(BigInteger)
     负债和所有者权益或股东权益总计 = Column(BigInteger)
+    last_refresh_time = Column(DateTime, default=pd.Timestamp('now'))
 
 
 class PeriodlyIncomeStatement2007(Base):
@@ -1518,6 +1541,7 @@ class PeriodlyIncomeStatement2007(Base):
     其中_归属于母公司 = Column(Float)
     其中_归属于少数股东 = Column(Float)
     其他收益 = Column(Float)
+    last_refresh_time = Column(DateTime, default=pd.Timestamp('now'))
 
 
 class PeriodlyCashFlowStatement2007(Base):
@@ -1622,6 +1646,7 @@ class PeriodlyCashFlowStatement2007(Base):
     加_其他原因对现金的影响2 = Column(Float)
     现金及现金等价物净增加额 = Column(Float)
     投资性房地产的折旧及摊销 = Column(Float)
+    last_refresh_time = Column(DateTime, default=pd.Timestamp('now'))
 
 
 class PeriodlyFinancialIndicator(Base):
@@ -1716,6 +1741,7 @@ class PeriodlyFinancialIndicator(Base):
     应收账款占比 = Column(Float)
     存货占比 = Column(Float)
     年化期间费用毛利比 = Column(Float)
+    last_refresh_time = Column(DateTime, default=pd.Timestamp('now'))
 
 
 class FinancialIndicatorRanking(Base):
@@ -1760,14 +1786,15 @@ class FinancialIndicatorRanking(Base):
     应收帐款周转率 = Column(Float)
     应收帐款周转率_行业均值 = Column(Float)
     应收帐款周转率_行业排名 = Column(Float)
-
+    last_refresh_time = Column(DateTime, default=pd.Timestamp('now'))
+    
 
 class StockInfo(Base):
     """1.1 基本资料"""
     证券代码 = Column(String(6), primary_key=True, index=True)
     证券简称 = Column(String(10))
     机构名称 = Column(Text)
-    股票类别 = Column(Text)
+    证券类别 = Column(Text)
     上市日期 = Column(DateTime)
     上市地点 = Column(Text)
     上市状态 = Column(Text)

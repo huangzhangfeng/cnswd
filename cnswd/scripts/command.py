@@ -21,8 +21,7 @@ import logbook
 import pandas as pd
 from logbook.more import ColorizedStderrHandler
 
-from .db.core import refresh as db_refresh
-from .db.core import update_stock_classify
+from .db.core import refresh_data, refresh_info, update_stock_classify
 from .infoes.disclosures import init_disclosure, refresh_disclosure
 from .infoes.news import append_historical_news, refresh_news
 from .szsh import cjmx
@@ -86,16 +85,24 @@ def ts_data(levels):
     """刷新股票数据"""
     ts_refresh(levels)
 
+
 # ====================数据搜索数据库==================== #
+@stock.command()
+@click.option('--codes', default=None, help='要刷新的股票代码')
+@click.option('--update/--no-update', default=False, help='是否更新股票信息或IPO')
+@click.option('--retry', default=3, help='尝试次数')
+def db_info(codes, update, retry):
+    """刷新股票基础信息"""
+    refresh_info(codes, update, retry)
 
 
 @stock.command()
-@click.option('--update/--no-update', default=False, help='是否更新股票信息或IPO')
+@click.option('--codes', default=None, help='要刷新的股票代码')
 @click.option('--retry', default=3, help='尝试次数')
 @click.argument('levels', nargs=-1)
-def db_data(update, levels, retry):
-    """刷新股票数据"""
-    db_refresh(update, levels, retry)
+def db_data(codes, levels, retry):
+    """刷新股票项目数据"""
+    refresh_data(codes, levels, retry)
 
 
 @stock.command()
