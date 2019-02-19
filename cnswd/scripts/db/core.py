@@ -104,7 +104,7 @@ def _get_start_date(level, code, offset=1):
         else:
             res = pd.Timestamp(DATE_MAPS[level][2])
     else:
-        if level.startswith('8.'):
+        if level.startswith('8.') or level == '3.1':
             res = t_end_date + pd.Timedelta(days=offset)
         else:
             end_date = max(t_end_date, l_end_date)
