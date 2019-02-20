@@ -199,6 +199,10 @@ def t_6_1(df):
     df = _fix_unit(df, units)
     # 然后才能修复列名称
     df = _fix_col_name(df)
+    df['派息日_A'] = pd.to_datetime(
+        df['派息日_A'], infer_datetime_format=True, errors='coerce')   
+    df['派息日_B'] = pd.to_datetime(
+        df['派息日_B'], infer_datetime_format=True, errors='coerce')   
     return df
 
 
