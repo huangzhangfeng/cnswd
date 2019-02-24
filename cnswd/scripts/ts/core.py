@@ -67,7 +67,11 @@ def _loop_by(api, level):
     start = _get_start_date(level)
     today = pd.Timestamp('today')
     freq = DATE_MAPS[level][1]
-    ps = loop_period_by(start, today, freq)
+    # 业绩预测应该包含未来日期
+    if level in ('6.1',):
+        ps = loop_period_by(start, today, freq, False)
+    else:
+        ps = loop_period_by(start, today, freq, True)
     for _, e in ps:
         if freq == 'Q':
             t1 = e.year
@@ -110,7 +114,11 @@ def _valid_level(to_do):
 
 def _refresh_data(level, retry):
     done = {}
-    api = ThematicStatistics(True)
+    try:
+        api = ThematicStatistics(True)
+    except Exception as e:
+        time.sleep(5)
+        api = ThematicStatistics(True)
     for i in range(retry):
         if done.get(level):
             continue
@@ -133,6 +141,6 @@ def refresh(levles=None):
     else:
         to_do = ensure_list(levles)
         _valid_level(to_do)
-    func = partial(_refresh_data, retry=10)
+    func = partial(_refresh_data, retry=3)
     with Pool(max_worker) as p:
         p.map(func, to_do)

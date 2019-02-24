@@ -103,7 +103,7 @@ class ThematicStatistics(SZXPage):
             self._switch_to(8, check_loaded_css)
         except TimeoutException:
             self.driver.implicitly_wait(1)
-            # self._switch_to(8, check_loaded_css)
+            self._switch_to(8, check_loaded_css)
         self.driver.implicitly_wait(1)
         self.logger.notice(f'加载主页用时：{(time.time() - start):>0.2f}秒')
 
