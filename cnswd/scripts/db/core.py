@@ -143,6 +143,8 @@ def _delete_recent_quotes(start, code):
 
 def _loop_by(api, level, code):
     start = _get_start_date(level, code)
+    if pd.Timestamp(start).date() > pd.Timestamp('today').date():
+        return
     if level == '3.1':
         start = _delete_recent_quotes(start, code)
     today = pd.Timestamp('today')

@@ -1,10 +1,13 @@
+import os
 import time
+from functools import partial
+from multiprocessing import Pool
 
 import logbook
 import pandas as pd
 from selenium.common.exceptions import (ElementNotInteractableException,
-                                        TimeoutException,
-                                        NoSuchElementException)
+                                        NoSuchElementException,
+                                        TimeoutException)
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
@@ -16,9 +19,9 @@ from cnswd.websource.szx.thematic_statistics import (LEVEL_MAPS,
 from .base import DATE_MAPS, MODEL_MAPS
 from .utils import fixed_data
 
-
 db_dir_name = 'thematicStatistics'
 logger = logbook.Logger('专题统计')
+max_worker = max(1, int(os.cpu_count()/2))
 
 
 def _get_start_date(level, offset=1):
@@ -105,6 +108,24 @@ def _valid_level(to_do):
             raise ValueError(f'不支持项目层级{l}')
 
 
+def _refresh_data(level, retry):
+    done = {}
+    api = ThematicStatistics(True)
+    for i in range(retry):
+        if done.get(level):
+            continue
+        api.logger.notice(f'第{i+1}次尝试：{LEVEL_MAPS[level][0]}')
+        try:
+            _refresh(api, level)
+            done[level] = True
+        except Exception as e:
+            api.logger.notice(f'{LEVEL_MAPS[level][0]} \n {e!r}')
+            done[level] = False
+            api.driver.quit()
+            api = ThematicStatistics(True)
+    api.driver.quit()
+
+
 def refresh(levles=None):
     """专题统计项目数据刷新"""
     if levles is None or len(levles) == 0:
@@ -112,19 +133,6 @@ def refresh(levles=None):
     else:
         to_do = ensure_list(levles)
         _valid_level(to_do)
-    done = {}
-    api = ThematicStatistics(True)
-    for i in range(10):
-        for level in to_do:
-            if done.get(level):
-                continue
-            api.logger.notice(f'第{i+1}次尝试：{LEVEL_MAPS[level][0]}')
-            try:
-                _refresh(api, level)
-                done[level] = True
-            except (IntegrityError, ElementNotInteractableException, NoSuchElementException, TimeoutException, ValueError, ConnectionError) as e:
-                api.logger.notice(f'{LEVEL_MAPS[level][0]} \n {e!r}')
-                done[level] = False
-                api.driver.quit()
-                api = ThematicStatistics(True)
-    api.driver.quit()
+    func = partial(_refresh_data, retry=10)
+    with Pool(max_worker) as p:
+        p.map(func, to_do)
