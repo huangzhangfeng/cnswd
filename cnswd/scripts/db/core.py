@@ -367,42 +367,6 @@ def _one_level(levels):
     return dfs
 
 
-# def _update_stock_classify(api):
-#     """更新股票分类信息"""
-#     table = Classification.__tablename__
-#     levels = []
-#     for nth in (1, 2, 3, 4, 5, 6):
-#         levels.extend(api.get_levels_for(nth))
-#     # CDR当前不可用
-#     levels = [x for x in levels if x not in (
-#         '6.6', '6.9') and api._is_end_level(x)]
-#     levels = [x for x in levels if api._is_end_level(x)]
-#     done = []
-#     dfs = []
-#     for i in range(10):
-#         to_do = sorted(list(set(levels) - set(done)))
-#         if len(to_do) == 0:
-#             break
-#         api.logger.notice(f'第{i+1}次尝试，剩余分类层级数量:{len(to_do)}')
-#         for level in sorted(to_do):
-#             try:
-#                 df = api.get_classify_stock(level)
-#                 dfs.append(df)
-#                 done.append(level)
-#             except Exception as e:
-#                 api.logger.notice(f"{e!r}")
-#         time.sleep(0.5)
-
-#     # 完整下载后，才删除旧数据
-#     delete_data_of(Classification)
-
-#     for df in dfs:
-#         if not df.empty:
-#             df.to_sql(table, get_engine(db_dir_name),
-#                       if_exists='append', index=False)
-#             api.logger.info(
-#                 f'表：{table} 添加{len(df):>4}行')
-
 def _update_stock_classify(levels):
     """更新股票分类信息"""
     table = Classification.__tablename__
