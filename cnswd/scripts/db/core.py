@@ -96,7 +96,8 @@ def _get_start_date(level, code, offset=1):
     expr = getattr(class_, DATE_MAPS[level][0])
     cond = class_.证券代码 == code
     t_end_date = session.query(func.max(expr)).filter(cond).scalar()
-    l_end_date = session.query(func.max(class_.last_refresh_time)).filter(cond).scalar()
+    l_end_date = session.query(
+        func.max(class_.last_refresh_time)).filter(cond).scalar()
     if t_end_date is None:
         ipo = _ipo_date(session, code)
         if ipo:
@@ -346,44 +347,91 @@ def _update_classify_bom(api):
     api.logger.info(f'表：{table} 更新 {len(bom):>4}行')
 
 
-def _update_stock_classify(api):
-    """更新股票分类信息"""
-    table = Classification.__tablename__
-    levels = []
-    for nth in (1, 2, 3, 4, 5, 6):
-        levels.extend(api.get_levels_for(nth))
-    # CDR当前不可用
-    levels = [x for x in levels if x not in (
-        '6.6', '6.9') and api._is_end_level(x)]
-    done = []
+def _one_level(levels):
+    api = DataBrowser(True)
+    done = {}
     dfs = []
-    for i in range(10):
-        to_do = sorted(list(set(levels) - set(done)))
-        if len(to_do) == 0:
-            break
-        api.logger.notice(f'第{i+1}次尝试，剩余分类层级数量:{len(to_do)}')
-        for level in sorted(to_do):
+    for _ in range(10):
+        for level in levels:
+            if done.get(level):
+                continue
             try:
                 df = api.get_classify_stock(level)
                 dfs.append(df)
-                done.append(level)
+                done[level] = True
             except Exception as e:
-                api.logger.notice(f"{e!r}")
-        time.sleep(0.5)
+                api.logger.notice(f"层级:{level} \n {e!r}")
+                api.driver.quit()
+                api = DataBrowser(True)
+    api.driver.quit()
+    return dfs
+
+
+# def _update_stock_classify(api):
+#     """更新股票分类信息"""
+#     table = Classification.__tablename__
+#     levels = []
+#     for nth in (1, 2, 3, 4, 5, 6):
+#         levels.extend(api.get_levels_for(nth))
+#     # CDR当前不可用
+#     levels = [x for x in levels if x not in (
+#         '6.6', '6.9') and api._is_end_level(x)]
+#     levels = [x for x in levels if api._is_end_level(x)]
+#     done = []
+#     dfs = []
+#     for i in range(10):
+#         to_do = sorted(list(set(levels) - set(done)))
+#         if len(to_do) == 0:
+#             break
+#         api.logger.notice(f'第{i+1}次尝试，剩余分类层级数量:{len(to_do)}')
+#         for level in sorted(to_do):
+#             try:
+#                 df = api.get_classify_stock(level)
+#                 dfs.append(df)
+#                 done.append(level)
+#             except Exception as e:
+#                 api.logger.notice(f"{e!r}")
+#         time.sleep(0.5)
+
+#     # 完整下载后，才删除旧数据
+#     delete_data_of(Classification)
+
+#     for df in dfs:
+#         if not df.empty:
+#             df.to_sql(table, get_engine(db_dir_name),
+#                       if_exists='append', index=False)
+#             api.logger.info(
+#                 f'表：{table} 添加{len(df):>4}行')
+
+def _update_stock_classify(levels):
+    """更新股票分类信息"""
+    table = Classification.__tablename__
+    batch_num = int(len(levels) / max_worker)
+    b_levels = loop_codes(levels, batch_num)
+    with Pool(max_worker) as p:
+        dfss = p.map(_one_level, b_levels)
 
     # 完整下载后，才删除旧数据
     delete_data_of(Classification)
 
-    for df in dfs:
-        if not df.empty:
-            df.to_sql(table, get_engine(db_dir_name),
-                      if_exists='append', index=False)
-            api.logger.info(
-                f'表：{table} 添加{len(df):>4}行')
+    for dfs in dfss:
+        for df in dfs:
+            if not df.empty:
+                df.to_sql(table, get_engine(db_dir_name),
+                          if_exists='append', index=False)
+                logger.info(
+                    f'表：{table} 添加{len(df):>4}行')
 
 
 def update_stock_classify():
     """刷新股票分类信息"""
     with DataBrowser(True) as api:
         _update_classify_bom(api)
-        _update_stock_classify(api)
+        levels = []
+        for nth in (1, 2, 3, 4, 5, 6):
+            levels.extend(api.get_levels_for(nth))
+        # CDR当前不可用
+        levels = [x for x in levels if x not in (
+            '6.6', '6.9') and api._is_end_level(x)]
+        levels = [x for x in levels if api._is_end_level(x)]
+    _update_stock_classify(levels)
