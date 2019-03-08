@@ -201,9 +201,15 @@ def szsh_treasury():
 
 
 @stock.command()
-def szsh_tct_gn():
+def tct_gn():
     """刷新腾讯概念股票列表"""
     tct_gn_refresh()
+
+
+@stock.command()
+def ths_gn():
+    """刷新同花顺概念股票列表"""
+    update_gn_list()
 
 
 @stock.command()
