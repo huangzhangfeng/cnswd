@@ -44,6 +44,8 @@ def create_tables(db_dir_name=DB_DIR_NAME, rewrite=False):
 def is_trading_time():
     """判断当前是否为交易时段"""
     now = pd.Timestamp('now')
+    if now.weekday() in (5, 6):
+        return False
     current_time = now.time()
     am_start = pd.Timestamp('9:30').time()
     am_end = pd.Timestamp('11:30').time()

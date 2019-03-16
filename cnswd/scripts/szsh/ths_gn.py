@@ -1,20 +1,39 @@
 """
 覆盖式更新
 """
+import math
+import os
 import random
 import time
 import warnings
+from multiprocessing import Pool
+
 import logbook
 import pandas as pd
-
 from cnswd.sql.base import get_session
 from cnswd.sql.szsh import THSGN
+from cnswd.utils import loop_codes
 from cnswd.websource.ths import THS
 
 from ..utils import is_trading_time
 
+max_worker = max(1, int(os.cpu_count()/2))
+
 log = logbook.Logger('同花顺')
 db_dir_name = 'szsh'
+
+
+def batch_codes(iterable):
+    """
+    切分可迭代对象，返回长度max_worker*4批次列表
+
+    说明：
+        1. 初始化浏览器很耗时，且占有大量内存
+        2. 切分目标主要是平衡速度与稳定性
+    """
+    min_batch_num = max_worker * 4
+    batch_num = max(min_batch_num, math.ceil(len(iterable) / max_worker / 4))
+    return loop_codes(iterable, batch_num)
 
 
 def has_data(session, gn_code, page_no):
@@ -53,6 +72,21 @@ def _add_gn_page(api, sess, gn_codes, d):
     return set(failed)
 
 
+def _update_gn_list(urls):
+    sess = get_session(db_dir_name)
+    api = THS()
+    codes = [x[0][-7:-1] for x in urls]
+    d = {x[0][-7:-1]: x[1] for x in urls}
+    for i in range(20):
+        log.info('第{}次尝试，剩余{}个概念'.format(i+1, len(codes)))
+        codes = _add_gn_page(api, sess, codes, d)
+        if len(codes) == 0:
+            break
+        time.sleep(1)
+    api.browser.quit()
+    sess.close()
+
+
 def update_gn_list():
     """
     更新股票概念列表
@@ -65,15 +99,10 @@ def update_gn_list():
     # 首先删除原有数据
     sess.query(THSGN).delete()
     sess.commit()
+    sess.close()
     api = THS()
     urls = api.gn_urls
-    codes = [x[0][-7:-1] for x in urls]
-    d = {x[0][-7:-1]: x[1] for x in urls}
-    for i in range(10):
-        log.info('第{}次尝试，剩余{}个概念'.format(i+1, len(codes)))
-        codes = _add_gn_page(api, sess, codes, d)
-        if len(codes) == 0:
-            break
-        time.sleep(1)
     api.browser.quit()
-    sess.close()
+    b_codes = batch_codes(urls)
+    with Pool(max_worker) as p:
+        p.map(_update_gn_list, b_codes)
