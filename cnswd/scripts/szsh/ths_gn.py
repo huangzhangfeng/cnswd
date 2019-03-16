@@ -1,5 +1,7 @@
 """
 覆盖式更新
+
+同花顺网站禁止多进程提取数据
 """
 import math
 import os
@@ -17,7 +19,7 @@ from cnswd.websource.ths import THS
 
 from ..utils import is_trading_time
 
-max_worker = max(1, int(os.cpu_count()/2))
+max_worker = 1 # max(1, int(os.cpu_count()/2)) 网站对多进程有限制
 
 log = logbook.Logger('同花顺')
 db_dir_name = 'szsh'
@@ -103,6 +105,4 @@ def update_gn_list():
     api = THS()
     urls = api.gn_urls
     api.browser.quit()
-    b_codes = batch_codes(urls)
-    with Pool(max_worker) as p:
-        p.map(_update_gn_list, b_codes)
+    _update_gn_list(urls)
