@@ -79,3 +79,39 @@ class THS(object):
         for a in info:
             res.append((a.get_attribute('href'), a.text))
         return res
+
+    def _gn_times(self, page):
+        na_values = ['--', '无']
+        url_fmt = 'http://q.10jqka.com.cn/gn/index/field/addtime/order/desc/page/{}/ajax/1/'
+        url = url_fmt.format(page)
+        self.browser.get(url)
+        df = pd.read_html(self.browser.page_source, na_values=na_values)[0]
+        log.info('读取第{}页数据'.format(page))
+        return df
+
+    @property
+    def gn_times(self):
+        """股票概念概述列表"""
+        url = 'http://q.10jqka.com.cn/gn/'
+        self.browser.get(url)
+        page_num = int(self.browser.find_element_by_css_selector(
+            '.page_info').text.split('/')[1])
+        dfs = []
+        status = {}
+        for t in range(40):
+            for i in range(page_num):
+                page = i+1
+                ok = status.get(page)
+                if ok:
+                    continue
+                try:
+                    df = self._gn_times(page)
+                    dfs.append(df)
+                    status[page] = True
+                except:
+                    status[page] = False
+                    time.sleep(0.5)
+                    log.info('第{}次尝试 第{}页'.format(t+1, page))
+        res = pd.concat(dfs)
+        res.columns = ['日期', '概念名称', '驱动事件', '龙头股', '成分股数量']
+        return res

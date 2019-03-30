@@ -12,7 +12,7 @@ from multiprocessing import Pool
 
 import logbook
 import pandas as pd
-from cnswd.sql.base import get_session
+from cnswd.sql.base import get_session, get_engine
 from cnswd.sql.szsh import THSGN
 from cnswd.utils import loop_codes
 from cnswd.websource.ths import THS
@@ -106,3 +106,13 @@ def update_gn_list():
     urls = api.gn_urls
     api.browser.quit()
     _update_gn_list(urls)
+
+
+def update_gn_time():
+    """
+    更新股票概念概述列表
+    """
+    engine = get_engine(db_dir_name)
+    with THS() as api:
+        df = api.gn_times
+        df.to_sql('thsgn_times', engine, index=False, if_exists='replace')
