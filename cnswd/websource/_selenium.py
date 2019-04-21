@@ -21,7 +21,6 @@ from selenium.webdriver.firefox.options import Options
 
 from ..utils import data_root
 
-# WIN_DRIVER = r'c:\\tools\\geckodriver.exe'
 LOG_PATH = os.path.join(data_root('geckordriver'), f'{os.getpid()}.log')
 
 
