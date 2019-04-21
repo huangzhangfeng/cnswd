@@ -334,3 +334,4 @@ ASALocalRun/
 *.egg-info/
 # tasks
 regular_tasks/
+bats/

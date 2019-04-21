@@ -142,6 +142,8 @@ class ShareholderShareChange(Base):
     变动数量占总股本比例 = Column(Float)
     变动后占比 = Column(Float)
     增_减持价格上限 = Column(Text)
+    变动后持股数量 = Column(Float)
+    变动后持有流通股数量 = Column(Float)
     last_refresh_time = Column(DateTime, default=pd.Timestamp('now'))
 
 
