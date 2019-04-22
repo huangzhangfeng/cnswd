@@ -1834,3 +1834,4 @@ class StockInfo(Base):
     证券事务代表 = Column(Text)
     会计师事务所 = Column(Text)
     律师事务所 = Column(Text)
+    last_refresh_time = Column(DateTime, default=pd.Timestamp('now'))

@@ -189,6 +189,7 @@ def _replace(api, level, code):
     if df.empty:
         return
     df = fixed_data(df, level)
+    df['last_refresh_time'] = pd.Timestamp('now')
     engine = get_engine(db_dir_name)
     if_exists = 'append'
     table_name = MODEL_MAPS[level].__tablename__
