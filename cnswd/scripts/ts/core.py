@@ -35,7 +35,7 @@ def _get_start_date(level, offset=1):
     t_end_date = session.query(func.max(expr)).scalar()
     session.close()
     if t_end_date is None:
-        return DATE_MAPS[level][2]
+        return pd.Timestamp(DATE_MAPS[level][2])
     else:
         if level in ('6.1',):
             # 业绩预告倒推2个季度
