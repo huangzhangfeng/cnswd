@@ -271,9 +271,8 @@ def _refresh_info(codes, update, retry):
 def refresh_info(codes=None, update=False, retry=3):
     """刷新股票基本信息及IPO数据"""
     if codes is None:
-        api = DataBrowser(True)
-        all_codes = api.get_all_codes()
-        api.driver.quit()
+        with DataBrowser(True) as api:
+            all_codes = api.get_all_codes()
     else:
         all_codes = ensure_list(codes)
     b_codes = batch_codes(all_codes)

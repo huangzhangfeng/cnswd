@@ -7,7 +7,7 @@ from __future__ import absolute_import, division, print_function
 
 import os
 import shutil
-
+import psutil
 import pandas as pd
 
 from cnswd.constants import DB_DIR_NAME, DB_NAME, ROOT_DIR_NAME
@@ -68,3 +68,22 @@ def remove_temp_files():
             pass
         # 然后再创建该目录
         data_root(d)
+
+
+def find_procs_by_name(name):
+    "Return a list of processes matching 'name'."
+    ls = []
+    for p in psutil.process_iter(attrs=['name']):
+        if p.info['name'] == name:
+            ls.append(p)
+    return ls
+
+
+def kill_proc():
+    """杀死可能残留的进程"""
+    for e in ['geckodriver.exe','firefox.exe']:
+        for p in find_procs_by_name(e):
+            try:
+                p.kill()
+            except psutil.NoSuchProcess:
+                pass

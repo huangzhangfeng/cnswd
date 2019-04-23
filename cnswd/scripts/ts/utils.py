@@ -7,6 +7,7 @@
 """
 import re
 import pandas as pd
+import numpy as np
 
 DATE_COL_PAT = re.compile('日$|日期$|年度$|期$')
 UNIT_PAT = re.compile(r'\(*.?元|股|%|‰\)$')
@@ -34,10 +35,15 @@ def _get_uit(x):
 
 
 def _zfill(df):
-    if '证券代码' in df.columns:
-        df['证券代码'] = df['证券代码'].map(lambda x: str(x).zfill(6))
-    if '基金代码' in df.columns:
-        df['基金代码'] = df['基金代码'].map(lambda x: str(x).zfill(6))
+    cols = ['证券代码', '上市代码', '转板代码', '基金代码']
+    def f(x):
+        try:
+            return str(int(x)).zfill(6)
+        except Exception:
+            return None
+    for c in cols:
+        if c in df.columns:
+            df[c] = df[c].map(f)
     return df
 
 

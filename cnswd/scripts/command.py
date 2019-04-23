@@ -11,6 +11,8 @@ $ stock stock-daily
 
 深证信凌晨时段比较可靠。
 
+简化设计，如当前正使用Firefox浏览器，完成数据刷新后会关闭所有浏览器。
+
 """
 from __future__ import absolute_import, division, print_function
 

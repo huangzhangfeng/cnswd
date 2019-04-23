@@ -268,7 +268,7 @@ class ThematicStatistics(SZXPage):
         pagination = self.driver.find_element_by_css_selector(pagination_css)
         try:
             total = int(re.search(PAGINATION_PAT, pagination.text).group(1))
-            self.logger.notice(f"共{total}条记录")
+            self.logger.notice(f"提取网络数据 {total} 条记录")
         except UnboundLocalError:
             msg = '读取表信息失败。项目:{},t1:{},t2:{}'.format(
                 self.current_level,

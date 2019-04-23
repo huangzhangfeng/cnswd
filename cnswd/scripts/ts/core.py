@@ -18,6 +18,8 @@ from cnswd.websource.szx.thematic_statistics import (LEVEL_MAPS,
 
 from .base import DATE_MAPS, MODEL_MAPS
 from .utils import fixed_data
+from ..utils import kill_proc
+
 
 db_dir_name = 'thematicStatistics'
 logger = logbook.Logger('专题统计')
@@ -71,6 +73,8 @@ def _loop_by(api, level):
     if level in ('6.1',):
         ps = loop_period_by(start, today, freq, False)
     else:
+        if start > today:
+            return
         ps = loop_period_by(start, today, freq, True)
     for _, e in ps:
         if freq == 'Q':
@@ -142,5 +146,8 @@ def refresh(levles=None):
         to_do = ensure_list(levles)
         _valid_level(to_do)
     func = partial(_refresh_data, retry=3)
-    with Pool(max_worker) as p:
-        p.map(func, to_do)
+    try:
+        with Pool(max_worker) as p:
+            p.map(func, to_do)
+    except Exception:
+        kill_proc()
