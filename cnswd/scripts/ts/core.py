@@ -37,7 +37,7 @@ def _get_start_date(level, offset=1):
     if t_end_date is None:
         return pd.Timestamp(DATE_MAPS[level][2])
     else:
-        if level in ('6.1',):
+        if level in ('5.5','6.1','7.1'):
             # 业绩预告倒推2个季度
             return t_end_date - pd.Timedelta(days=2*90)
         else:
@@ -61,7 +61,7 @@ def _save_to_sql(level, df, e):
     engine = get_engine(db_dir_name)
     # 首先删除旧数据
     # if level in ('6.1', '7.1',) and _need_repalce(level, e):
-    if level in ('6.1', '7.1',):
+    if level in ('5.5','6.1','7.1'):
         session = get_session(db_dir_name)
         num = session.query(class_).filter(expr == e).delete(False)
         logger.notice(f"删除 表:{table_name} {num}行")
