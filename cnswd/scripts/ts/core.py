@@ -15,6 +15,7 @@ from cnswd.sql.base import get_engine, get_session
 from cnswd.utils import ensure_list, loop_period_by
 from cnswd.websource.szx.thematic_statistics import (LEVEL_MAPS,
                                                      ThematicStatistics)
+from pandas.tseries.offsets import QuarterEnd                                                 
 
 from .base import DATE_MAPS, MODEL_MAPS
 from .utils import fixed_data
@@ -36,16 +37,20 @@ def _get_start_date(level, offset=1):
     if t_end_date is None:
         return DATE_MAPS[level][2]
     else:
-        # 调整天数
-        return t_end_date + pd.Timedelta(days=offset)
+        if level in ('6.1',):
+            # 业绩预告倒推2个季度
+            return t_end_date - pd.Timedelta(days=2*90)
+        else:
+            # 调整天数
+            return t_end_date + pd.Timedelta(days=offset)
 
 
-def _need_repalce(level, e):
-    today = pd.Timestamp('today')
-    if (today - e).days <= 90:
-        return True
-    else:
-        return False
+# def _need_repalce(level, e):
+#     today = pd.Timestamp('today')
+#     if (today - e).days <= 90:
+#         return True
+#     else:
+#         return False
 
 
 def _save_to_sql(level, df, e):
@@ -55,7 +60,8 @@ def _save_to_sql(level, df, e):
     table_name = class_.__tablename__
     engine = get_engine(db_dir_name)
     # 首先删除旧数据
-    if level in ('7.1',) and _need_repalce(level, e):
+    # if level in ('6.1', '7.1',) and _need_repalce(level, e):
+    if level in ('6.1', '7.1',):
         session = get_session(db_dir_name)
         num = session.query(class_).filter(expr == e).delete(False)
         logger.notice(f"删除 表:{table_name} {num}行")
@@ -74,7 +80,8 @@ def _loop_by(api, level):
     freq = DATE_MAPS[level][1]
     # 业绩预测应该包含未来日期
     if level in ('6.1',):
-        ps = loop_period_by(start, today, freq, False)
+        end = QuarterEnd(normalize=True).apply(today)
+        ps = loop_period_by(start, end, freq, False)
     else:
         if start > today:
             return
