@@ -68,6 +68,9 @@ def _save_to_sql(level, df, e):
 def _loop_by(api, level):
     start = _get_start_date(level)
     today = pd.Timestamp('today')
+    # 当日网络数据更新时点设定为18
+    if today.hour < 18 and start.date() == today.date():
+        return
     freq = DATE_MAPS[level][1]
     # 业绩预测应该包含未来日期
     if level in ('6.1',):

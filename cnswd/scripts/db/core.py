@@ -27,7 +27,7 @@ from cnswd.websource.szx.data_browse import LEVEL_MAPS, DataBrowser
 
 from .base import DATE_MAPS, MODEL_MAPS
 from .utils import fixed_data
-
+from ..utils import kill_proc
 
 db_dir_name = 'dataBrowse'
 logger = logbook.Logger('数据搜索')
@@ -149,6 +149,9 @@ def _loop_by(api, level, code):
     if level == '3.1':
         start = _delete_recent_quotes(start, code)
     today = pd.Timestamp('today')
+    # 当日网络数据更新时点设定为18
+    if today.hour < 18 and start.date() == today.date():
+        return
     freq = DATE_MAPS[level][1]
     # 单只股票，期间 = 数据库最后一日 ~ 今日
     if freq == 'D':
@@ -335,8 +338,16 @@ def refresh_data(codes=None, levles=None, retry=3):
         _valid_level(to_do)
     func = partial(_refresh_data, levles=to_do,
                    retry=retry, bank_codes=bank_codes)
-    with Pool(max_worker) as p:
-        p.map(func, b_codes)
+    try:
+        with Pool(max_worker) as p:
+            p.map(func, b_codes)
+    except Exception:
+        # 再次尝试
+        time.sleep(10)
+        with Pool(max_worker) as p:
+            p.map(func, b_codes)
+    finally:
+        kill_proc()
 
 
 def _update_classify_bom(api):
