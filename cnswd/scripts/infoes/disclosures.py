@@ -112,12 +112,11 @@ async def _fetch_disclosure_async(session, plate, category, date_str, page):
         pageNum=page,
         pageSize=30,
     )
-    if page > 1:
-        # 如果太频繁访问，容易导致关闭连接
-        await asyncio.sleep(4)
+    # 如果太频繁访问，容易导致关闭连接
     async with session.post(URL, data=kwargs, headers=HEADERS) as r:
         msg = f"{market} {date_str} 第{page}页 响应状态：{r.status}"
         logger.info(msg)
+        await asyncio.sleep(0.5)
         return await r.json()
 
 

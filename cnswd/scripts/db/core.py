@@ -280,8 +280,13 @@ def refresh_info(codes=None, update=False, retry=3):
         all_codes = ensure_list(codes)
     b_codes = batch_codes(all_codes)
     func = partial(_refresh_info, update=update, retry=retry)
-    with Pool(max_worker) as p:
-        p.map(func, b_codes)
+    try:
+        with Pool(max_worker) as p:
+            p.map(func, b_codes)
+    except Exception:
+        pass
+    finally:
+        kill_proc()
 
 
 def _refresh_data(codes, levles, retry, bank_codes):
@@ -342,10 +347,7 @@ def refresh_data(codes=None, levles=None, retry=3):
         with Pool(max_worker) as p:
             p.map(func, b_codes)
     except Exception:
-        # 再次尝试
-        time.sleep(10)
-        with Pool(max_worker) as p:
-            p.map(func, b_codes)
+        pass
     finally:
         kill_proc()
 
@@ -383,9 +385,13 @@ def _update_stock_classify(levels):
     table = Classification.__tablename__
     batch_num = int(len(levels) / max_worker)
     b_levels = loop_codes(levels, batch_num)
-    with Pool(max_worker) as p:
-        dfss = p.map(_one_level, b_levels)
-
+    try:
+        with Pool(max_worker) as p:
+            dfss = p.map(_one_level, b_levels)
+    except Exception:
+        pass
+    finally:
+        kill_proc()
     # 完整下载后，才删除旧数据
     delete_data_of(Classification)
 

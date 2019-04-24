@@ -84,7 +84,7 @@ def remove():
 @stock.command()
 @click.argument('levels', nargs=-1)
 def ts_data(levels):
-    """刷新股票数据"""
+    """刷新专题统计数据"""
     ts_refresh(levels)
 
 

@@ -160,9 +160,6 @@ def refresh(levles=None):
         with Pool(max_worker) as p:
             p.map(func, to_do)
     except Exception:
-        # 再次尝试
-        time.sleep(10)
-        with Pool(max_worker) as p:
-            p.map(func, to_do)
+        pass
     finally:
         kill_proc()
