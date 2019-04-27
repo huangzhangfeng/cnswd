@@ -9,6 +9,7 @@
 """
 
 import asyncio
+from aiohttp.client_exceptions import ContentTypeError
 import math
 import time
 
@@ -94,7 +95,12 @@ def _to_dataframe(data):
             res.append(to_add)
         df = pd.DataFrame.from_records(res, columns=COLUMNS)
         return df
-    dfs = [f(page_data) for page_data in data]
+    dfs = []
+    for page_data in data:
+        try:
+            dfs.append(f(page_data))
+        except Exception:
+            pass
     return pd.concat(dfs)
 
 
@@ -116,8 +122,11 @@ async def _fetch_disclosure_async(session, plate, category, date_str, page):
     async with session.post(URL, data=kwargs, headers=HEADERS) as r:
         msg = f"{market} {date_str} 第{page}页 响应状态：{r.status}"
         logger.info(msg)
-        await asyncio.sleep(0.5)
-        return await r.json()
+        await asyncio.sleep(1)
+        try:
+            return await r.json()
+        except ContentTypeError:
+            return {}
 
 
 async def _fetch_one_day(session, plate, date_str):
@@ -241,4 +250,5 @@ async def refresh_disclosure():
             df = await fetch_one_day(web_session, d)
             _refresh(df, session)
             del df
+            time.sleep(1)
     session.close()
