@@ -33,7 +33,7 @@ from .szsh.quote import refresh_live_quote
 from .szsh.stock_daily import refresh_daily
 from .szsh.stock_info import refresh as refresh_szsh_stock_info
 from .szsh.tct_gn import refresh as tct_gn_refresh
-from .szsh.ths_gn import update_gn_list
+from .szsh.ths_gn import update_gn_list, update_gn_time
 from .szsh.trading_calendar import update_trading_calendars
 from .szsh.treasury import refresh_treasury
 from .ts.core import refresh as ts_refresh
@@ -212,6 +212,12 @@ def tct_gn():
 def ths_gn():
     """刷新同花顺概念股票列表"""
     update_gn_list()
+    
+
+@stock.command()
+def gn_time():
+    """刷新同花顺概念概述"""
+    update_gn_time()
 
 
 @stock.command()

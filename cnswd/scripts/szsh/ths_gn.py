@@ -17,7 +17,7 @@ from cnswd.sql.szsh import THSGN
 from cnswd.utils import loop_codes
 from cnswd.websource.ths import THS
 
-from ..utils import is_trading_time
+from ..utils import is_trading_time, kill_proc
 
 max_worker = 1 # max(1, int(os.cpu_count()/2)) 网站对多进程有限制
 
@@ -102,10 +102,15 @@ def update_gn_list():
     sess.query(THSGN).delete()
     sess.commit()
     sess.close()
-    api = THS()
-    urls = api.gn_urls
-    api.browser.quit()
-    _update_gn_list(urls)
+    try:
+        api = THS()
+        urls = api.gn_urls
+        api.browser.quit()
+        _update_gn_list(urls)
+    except Exception:
+        pass
+    finally:
+        kill_proc()
 
 
 def update_gn_time():
@@ -113,6 +118,11 @@ def update_gn_time():
     更新股票概念概述列表
     """
     engine = get_engine(db_dir_name)
-    with THS() as api:
-        df = api.gn_times
-        df.to_sql('thsgn_times', engine, index=False, if_exists='replace')
+    try:
+        with THS() as api:
+            df = api.gn_times
+            df.to_sql('thsgn_times', engine, index=False, if_exists='replace')
+    except Exception:
+        pass
+    finally:
+        kill_proc()
