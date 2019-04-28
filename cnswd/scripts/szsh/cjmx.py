@@ -199,20 +199,50 @@ def _wy_fix_data(df):
 
 def wy_to_db(codes, date):
     engine = get_engine(db_dir_name)
-    for code in codes:
-        if has_traded(code, date) and not has_cjmx(code, date):
-            date_str = date.strftime(DATE_FMT)
-            try:
-                df = wy_fetch_cjmx(code, date_str)
-            except NoWebData as e:
-                logger.info(f'股票：{code} {date_str} {e!r}')
-                return
-            df = _wy_fix_data(df)
-            # 保留2位小数
-            df['价格变动'] = (df['价格变动'] * 100).astype('int') / 100.0
-            df['成交额'] = (df['成交额'] * 100).astype('int') / 100.0
-            df.to_sql(CJMX.__tablename__, engine, if_exists='append', index=False)
-            logger.info(f'股票：{code} {date_str} 共{len(df):>3}行')
+    status = {}
+    for _ in range(10):
+        for code in codes:
+            ok = status.get(code)
+            if ok:
+                logger.info(f'股票：{code} 已经刷新，跳过')
+                continue
+            if has_traded(code, date) and not has_cjmx(code, date):
+                date_str = date.strftime(DATE_FMT)
+                try:
+                    df = wy_fetch_cjmx(code, date_str)
+                    status[code] = True
+                except Exception as e:
+                    logger.info(f'股票：{code} {date_str} {e!r}')
+                    status[code] = False
+                    continue                
+                df = _wy_fix_data(df)
+                # 保留2位小数
+                df['价格变动'] = (df['价格变动'] * 100).astype('int') / 100.0
+                df['成交额'] = (df['成交额'] * 100).astype('int') / 100.0
+                df.to_sql(CJMX.__tablename__, engine, if_exists='append', index=False)
+                logger.info(f'股票：{code} {date_str} 共{len(df):>3}行')
+                # time.sleep(0.3)
+            else:
+                status[code] = True
+              
+
+# def wy_refresh_cjmx(date_str):
+#     """刷新指定日期成交明细数据"""
+#     if not need_refresh(date_str):
+#         return
+#     codes = get_valid_codes(True)
+#     date = pd.Timestamp(date_str).date()
+#     p_func = partial(wy_to_db, date=date)
+#     # 缩小批量，防止数据库死锁
+#     p_codes = loop_codes(codes, 80)
+#     kws = {'exs': (URLError, TimeoutError)}
+#     # 当一次性map时，经常会出现长时间堵塞，尝试分批执行
+#     for i, b_codes in enumerate(p_codes):
+#         logger.notice(f"第{i+1}批，共{len(b_codes)}代码")
+#         runner = TryToCompleted(p_func, b_codes, kws, retry_times=10, sleep=3)
+#         runner.run()
+#         time.sleep(10)
+#         del runner
 
 
 def wy_refresh_cjmx(date_str):
@@ -221,13 +251,8 @@ def wy_refresh_cjmx(date_str):
         return
     codes = get_valid_codes(True)
     date = pd.Timestamp(date_str).date()
-    p_func = partial(wy_to_db, date=date)
-    p_codes = loop_codes(codes, 300)
-    kws = {'exs': (URLError, TimeoutError)}
-    # 当一次性map时，经常会出现长时间堵塞，尝试分批执行
+    p_codes = loop_codes(codes, 24)
     for i, b_codes in enumerate(p_codes):
         logger.notice(f"第{i+1}批，共{len(b_codes)}代码")
-        runner = TryToCompleted(p_func, b_codes, kws, retry_times=10, sleep=3)
-        runner.run()
+        wy_to_db(b_codes, date)
         time.sleep(1)
-        del runner

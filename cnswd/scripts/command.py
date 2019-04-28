@@ -37,7 +37,7 @@ from .szsh.ths_gn import update_gn_list, update_gn_time
 from .szsh.trading_calendar import update_trading_calendars
 from .szsh.treasury import refresh_treasury
 from .ts.core import refresh as ts_refresh
-from .utils import create_tables, remove_temp_files
+from .utils import create_tables, remove_temp_files, kill_proc
 
 logbook.set_datetime_format('local')
 handler = ColorizedStderrHandler()
@@ -182,6 +182,7 @@ def szsh_cjmx(date):
     else:
         input_date = date
     cjmx.wy_refresh_cjmx(input_date)
+    kill_proc()
 
 
 # @stock.command()
