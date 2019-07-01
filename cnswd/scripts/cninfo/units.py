@@ -81,6 +81,7 @@ def db_3_1(df):
                        "10日平均（MA10）": "MA10",
                        "30日平均（MA30）": "MA30",
                        "120日均价": "MA120",
+                       "EV/EBITDA":"EV_EBITDA",
                        #    "股票代码": "证券代码",
                        #    "股票简称": "证券简称",
                        "52周均价（360日）均价": "MA360"},
@@ -89,6 +90,8 @@ def db_3_1(df):
 
 
 def db_6_1(df):
+    df.rename(columns={"分配股本基数（股 ）万股": "分配股本基数(万股)"},
+              inplace=True)
     # 派息日(A) -> 派息日_A
     df['派息日(A)'] = pd.to_datetime(
         df['派息日(A)'], infer_datetime_format=True, errors='coerce')

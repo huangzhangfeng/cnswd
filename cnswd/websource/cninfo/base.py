@@ -365,6 +365,11 @@ class SZXPage(object):
         width = 5  # 最多为万
         dfs = []
         na_values = ['-', '无', ';']
+        level = self.current_level
+        if level:
+            item = self.name_map[level]
+        else:
+            item = ''
         for i in range(pages):
             df = pd.read_html(self.driver.page_source, na_values=na_values)[0]
             dfs.append(df)
@@ -372,7 +377,7 @@ class SZXPage(object):
             if i != (pages - 1):
                 next_page = self.driver.find_element_by_link_text(str(i + 2))
                 next_page.click()
-            self.logger.info(f'>> 第{i+1:{width}}页 / 共{pages:{width}}页')
+            self.logger.info(f'>> {item:{14}} 第{i+1:{width}}页 / 共{pages:{width}}页')
         return _concat(dfs)
 
     def _change_year(self, css, year):

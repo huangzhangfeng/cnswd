@@ -119,22 +119,32 @@ def get_start(level, db_name):
     elif freq == 'D':
         start_date = end_date + pd.Timedelta(1, unit=freq)
     elif freq == 'M':
-        start_date = end_date - pd.Timedelta(1, unit=freq)
+        if (today - end_date) > pd.Timedelta(1, 'M'):
+            start_date = end_date + pd.Timedelta(1, 'D')
+        else:
+            start_date = end_date - pd.Timedelta(1, unit=freq)
     elif freq == 'Q':
         # 为确保数据完整，须在本地数据库最大日期后溯2个季度
         # 自当前季度倒退2个季度，选择季初日期
         # 如当前日期 2019-09-30 则开始日期为 2019-04-01
         # 如当前日期 2019-06-30 则开始日期为 2019-01-01
-        if (today - pd.Timedelta(3, 'M')).normalize() > end_date:
-            n = -1
+        if (today - end_date) > pd.Timedelta(6, 'M'):
+            start_date = end_date + pd.Timedelta(1, 'D')
+        elif (today - end_date) > pd.Timedelta(3, 'M'):
+            start_date = QuarterBegin(
+                -1, normalize=True, startingMonth=1).apply(end_date)
         else:
-            n = -2
-        start_date = QuarterBegin(
-            n, normalize=True, startingMonth=1).apply(end_date)
+            start_date = QuarterBegin(
+                -2, normalize=True, startingMonth=1).apply(end_date)
     elif freq == 'Y':
         # 为确保数据完整，须在本地数据库最大日期后溯2年
         # 自当前年度倒退2年，选择年初日期
-        start_date = YearBegin(-2, normalize=True, month=1).apply(end_date)
+        if (today - end_date) > pd.Timedelta(2, freq):
+            start_date = end_date + pd.Timedelta(1, 'D')
+        if (today - end_date) > pd.Timedelta(1, freq):
+            start_date = YearBegin(-1, normalize=True, month=1).apply(end_date)
+        else:
+            start_date = YearBegin(-2, normalize=True, month=1).apply(end_date)
     else:
         raise ValueError(f'{level} 更新频率字符值错误')
     return start_date.normalize()
