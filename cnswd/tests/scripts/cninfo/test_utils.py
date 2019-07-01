@@ -2,8 +2,10 @@ import unittest
 import pandas as pd
 import re
 from pandas.testing import assert_frame_equal
+from numpy.testing import assert_array_almost_equal
 from cnswd.scripts.cninfo.units import (
     _fix_date, _fix_code,
+    _fix_num_unit, get_unit_dict,
     _remove_prefix_num, _remove_suffix_unit
 )
 
@@ -39,6 +41,15 @@ class FixTestCase(unittest.TestCase):
             '证券代码': ['000001', '000001', '000001', 'K0101'],
         })
         assert_frame_equal(actual, expected)
+
+    def test_fix_num_unit(self):
+        """测试修复数量单位"""
+        data = pd.read_csv('tests/cninfo/ts_2_2.csv')
+        origin = data.copy()
+        actual = _fix_num_unit(data)
+        units = get_unit_dict(data)
+        for col, adj in units.items():
+            assert_array_almost_equal(origin[col] * adj, actual[col])
 
     def test_remove_prefix_num(self):
         """测似去除列名称中的前导数字"""
