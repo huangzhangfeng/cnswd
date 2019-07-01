@@ -15,8 +15,8 @@ from cnswd.sql.backup import Base as BackupBase
 from cnswd.sql.base import db_path, get_engine
 from cnswd.sql.info import Base as InfoBase
 from cnswd.sql.szsh import Base as szshBase
-from cnswd.sql.szx import Base as SZXBase
-from cnswd.sql.ts import Base as TSBase
+from cnswd.sql.data_browse import Base as SZXBase
+from cnswd.sql.thematic_statistics import Base as TSBase
 from cnswd.utils import data_root
 
 

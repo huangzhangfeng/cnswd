@@ -21,7 +21,6 @@ from cnswd.websource._selenium import make_headless_browser
 from cnswd.websource.exceptions import NoWebData
 from cnswd.websource.wy import fetch_cjmx as wy_fetch_cjmx
 
-from ..runner import TryToCompleted
 from .base import get_ipo_date, get_valid_codes, need_refresh
 
 logger = logbook.Logger('股票成交明细')

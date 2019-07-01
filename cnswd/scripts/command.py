@@ -17,15 +17,15 @@ $ stock stock-daily
 from __future__ import absolute_import, division, print_function
 
 import asyncio
-
+from functools import partial
 import click
 import logbook
 import pandas as pd
 from logbook.more import ColorizedStderrHandler
 
-from .db.core import refresh_data, refresh_info, update_stock_classify
 from .infoes.disclosures import init_disclosure, refresh_disclosure
 from .infoes.news import append_historical_news, refresh_news
+
 from .szsh import cjmx
 from .szsh.index_daily import flush_index_daily
 from .szsh.init_stock_daily import init_stock_daily_data
@@ -36,8 +36,13 @@ from .szsh.tct_gn import refresh as tct_gn_refresh
 from .szsh.ths_gn import update_gn_list, update_gn_time
 from .szsh.trading_calendar import update_trading_calendars
 from .szsh.treasury import refresh_treasury
-from .ts.core import refresh as ts_refresh
+
+from .cninfo.base import TS_DATE_FIELD, DB_DATE_FIELD
+from .cninfo.core import update_classify_bom, update_stock_classify, before_update_stock_classify, refresh_data
+
 from .utils import create_tables, remove_temp_files, kill_proc
+from .runner import TryToCompleted
+
 
 logbook.set_datetime_format('local')
 handler = ColorizedStderrHandler()
@@ -51,8 +56,6 @@ MESSAGE = """
     1. 初始化数据中断，需要继续初始化；
     2. 需要新添加表，同时保留原数据；
 """
-
-# ====================基本操作==================== #
 
 
 @click.group()
@@ -73,44 +76,38 @@ def create(db_dir_name, rewrite):
         create_tables(db_dir_name, False)
 
 
-@stock.command()
-def remove():
-    """删除临时文件"""
-    remove_temp_files()
-
-
 # ====================专题统计数据库==================== #
 
 @stock.command()
 @click.argument('levels', nargs=-1)
 def ts_data(levels):
     """刷新专题统计数据"""
-    ts_refresh(levels)
+    if not levels:
+        levels = TS_DATE_FIELD.keys()
+    func = partial(refresh_data, db_name='ts')
+    run = TryToCompleted(func, levels)
+    run()
 
 
 # ====================数据搜索数据库==================== #
 @stock.command()
-@click.option('--codes', default=None, help='要刷新的股票代码')
-@click.option('--update/--no-update', default=False, help='是否更新股票信息或IPO')
-@click.option('--retry', default=3, help='尝试次数')
-def db_info(codes, update, retry):
-    """刷新股票基础信息"""
-    refresh_info(codes, update, retry)
-
-
-@stock.command()
-@click.option('--codes', default=None, help='要刷新的股票代码')
-@click.option('--retry', default=3, help='尝试次数')
 @click.argument('levels', nargs=-1)
-def db_data(codes, levels, retry):
+def db_data(levels):
     """刷新股票项目数据"""
-    refresh_data(codes, levels, retry)
+    if not levels:
+        levels = DB_DATE_FIELD.keys()
+    func = partial(refresh_data, db_name='db')
+    run = TryToCompleted(func, levels)
+    run()
 
 
 @stock.command()
 def db_classify():
     """刷新股票分类信息"""
-    update_stock_classify()
+    update_classify_bom()
+    run = TryToCompleted(update_stock_classify, range(
+        1, 7), (before_update_stock_classify,))
+    run()
 
 
 # ====================INFO数据库==================== #
@@ -182,7 +179,6 @@ def szsh_cjmx(date):
     else:
         input_date = date
     cjmx.wy_refresh_cjmx(input_date)
-    kill_proc()
 
 
 # @stock.command()
@@ -213,7 +209,7 @@ def tct_gn():
 def ths_gn():
     """刷新同花顺概念股票列表"""
     update_gn_list()
-    
+
 
 @stock.command()
 def gn_time():
@@ -225,3 +221,12 @@ def gn_time():
 def szsh_main_index_daily():
     """刷新主要指数日线数据"""
     flush_index_daily()
+
+# ====================定期清理==================== #
+@stock.command()
+def clean_up():
+    """每天清理可能残余的firefox，注意避免与日常任务时间重叠
+    如每日凌晨在没有后台抓取数据任务时，执行此任务
+    """
+    remove_temp_files()
+    kill_proc()

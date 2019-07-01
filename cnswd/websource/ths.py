@@ -20,7 +20,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
 from ._selenium import make_headless_browser
-from .szx._firefox import clear_firefox_cache
+from .cninfo._firefox import clear_firefox_cache
 
 log = logbook.Logger('同花顺')
 

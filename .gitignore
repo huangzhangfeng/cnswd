@@ -335,3 +335,4 @@ ASALocalRun/
 # tasks
 regular_tasks/
 bats/
+passwords.*

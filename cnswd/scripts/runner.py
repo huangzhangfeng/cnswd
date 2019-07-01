@@ -1,79 +1,80 @@
 import math
 import os
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
-
+import multiprocessing as mp
+from selenium.common.exceptions import TimeoutException
+from cnswd.websource.exceptions import RetryException
 import logbook
 
-from cnswd.utils import loop_codes
-
-max_worker = int(os.cpu_count()/2)
-
+max_worker = max(1, int(os.cpu_count()/2))
 logger = logbook.Logger('runner')
 
 
-def batch_codes(iterable):
-    """
-    切分可迭代对象，返回长度max_worker*4批次列表
-
-    说明：
-        1. 初始化浏览器很耗时，且占有大量内存
-        2. 切分目标主要是平衡速度与稳定性
-    """
-    min_batch_num = max_worker * 4
-    batch_num = max(min_batch_num, math.ceil(len(iterable) / max_worker / 4))
-    return loop_codes(iterable, batch_num)
-
-
 class TryToCompleted(object):
-    """多线程尝试直至完成"""
+    """多进程多次尝试直至完成任务"""
 
-    def __init__(self, func, iterable, kws={}, retry_times=30, sleep=3):
+    def __init__(self, func, iterable, before=(), end=(), retry_times=10, sleep=3):
         self._func = func
         self._iterable = iterable
-        # 异常
-        self._e = kws.pop('exs',Exception)
-        self._kws = kws
+        self._before = before
+        self._end = end
         self._retry_times = retry_times
         self._sleep = sleep
 
-    def run(self):
-        """内部运行过程，直至完成"""
+    def __call__(self):
+        mp.freeze_support()
         t_start = time.time()
-        completed = []
-        retry = {} # 记录重试次数
-        for i in range(self._retry_times):
-            if i == 0:
-                to_do = batch_codes(self._iterable)
-            else:
-                # 此时只需要处理上次异常部分
+        # 执行前置任务
+        if self._before:
+            for f in self._before:
+                f()
+        logger.info('Creating pool with %d processes\n' % max_worker)
+        with mp.Manager() as manager:
+            d = manager.dict({x: None for x in self._iterable})
+            for i in range(self._retry_times):
+                to_do = [l for l, s in d.items() if s is None]
                 if len(to_do) == 0:
                     break
-                to_do = batch_codes(to_do)
-            start = time.time()
-            with ThreadPoolExecutor(max_worker) as executor:
-                future_to_codes = {executor.submit(
-                    self._func, codes, **self._kws): codes for codes in to_do}
-                for future in as_completed(future_to_codes):
-                    codes = future_to_codes[future]
-                    try:
-                        future.result()
-                        completed.extend(codes)                   
-                    except self._e as e:
-                        for code in codes:
-                            num = retry.get(code, 0)
-                            retry[code] = num + 1
-                        logger.error('%s' % (e,))
-            # 如果重试三次依然不成功，则忽略
-            to_do = [c for c in retry.keys() if retry[c] <= 3 and c not in set(completed)]
-            logger.notice(
-                f'第{i+1}次尝试，用时：{(time.time() - start):.2f}秒，剩余数量：{len(to_do)}')
-            # 杀死进程firefox
-            # os.system('taskkill /f /im firefox.exe')
-            time.sleep(self._sleep)
-        end = set(self._iterable) - set(completed)
-        if len(end):
-            logger.warn(f'经过{i+1}次尝试，以下尚未完成：{sorted(end)}')
+                logger.info(f"第{i+1}次尝试\n")
+                with mp.Pool(max_worker) as pool:
+                    tasks = [(self._do_task, (l, d))
+                             for l in to_do]
+                    pool.map(self._executestar, tasks)
+                    self._report(d, i)
+        # 执行后置任务
+        if self._end:
+            for f in self._end:
+                f()
         logger.notice(f'总用时：{(time.time() - t_start):.2f}秒')
 
+    def _executestar(self, args):
+        return self._execute(*args)
 
+    def _execute(self, func, args):
+        func(*args)
+
+    def _do_task(self, one, d):
+        """执行单一任务"""
+        try:
+            # 正常执行，在共享字典`d`标注状态`完成`
+            self._func(one)
+            d[one] = True
+        except (RetryException, TimeoutException):
+            # 超时或者重试异常执行，在共享字典`d`标注状态`None`
+            d[one] = None
+            time.sleep(self._sleep)
+        except Exception as e:
+            # 其他异常，在共享字典`d`标注状态`e`
+            d[one] = f"{e}"
+
+    def _report(self, d, i):
+        """报告执行状态"""
+        msg = f"第{i+1}次尝试结果：\n"
+        for k, v in d.items():
+            if v is None:
+                msg += f'项目：{k} 需要重试 \n'
+            elif v == True:
+                msg += f'项目：{k} 已经完成 \n'
+            else:
+                msg += f'项目：{k} {d[k]} \n'
+        print(msg)

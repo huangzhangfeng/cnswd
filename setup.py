@@ -9,7 +9,7 @@ with io.open(path.join(here, 'requirements.txt'), encoding='utf-8') as f:
 
 setup(
     name="cnswd",
-    version="2.1.0",
+    version="2.2.0",
     packages=find_packages(),
     long_description="""
     本包使用Firefox浏览器，必须安装Firefox driver。\n
