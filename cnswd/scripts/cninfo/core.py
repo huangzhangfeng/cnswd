@@ -204,7 +204,9 @@ def _delete_recent_data(level, start, db_name):
     session = _get_session(db_name)
     num = session.query(class_).filter(
         expr >= start).delete(False)
-    logger.notice(f"删除数据库 {db_name} 表:{table_name} {num}行")
+    st = start.strftime(r'%Y-%m-%d')
+    msg = f"删除数据库 {db_name} 表:{table_name} 自{st}开始 {num}行"
+    logger.notice(msg)
     session.commit()
     session.close()
 

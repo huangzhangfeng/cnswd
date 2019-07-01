@@ -190,48 +190,48 @@ class Equity(Base):
     流通受限股份 = Column(BigInteger)
 
 
-class ActualController(Base):
-    """实际控制人持股变动 3.9"""
-    __tablename__ = 'actual_controller'
+# class ActualController(Base):
+#     """实际控制人持股变动 3.9"""
+#     __tablename__ = 'actual_controller'
 
-    证券代码 = Column(Text, primary_key=True, nullable=False)
-    证券简称 = Column(Text)
-    变动日期 = Column(DateTime, primary_key=True, nullable=False)
-    实际控制人名称 = Column(Text, primary_key=True, nullable=False)
-    控股数量 = Column(BigInteger)
-    控股比例 = Column(Float)
-    直接控制人名称 = Column(Text)
-
-
-class Concentration(Base):
-    """股东人数及持股集中度 3.10"""
-    __tablename__ = 'concentration'
-
-    证券代码 = Column(Text, primary_key=True, nullable=False)
-    证券简称 = Column(Text)
-    变动日期 = Column(DateTime, primary_key=True, nullable=False)
-    本期股东人数 = Column(BigInteger)
-    上期股东人数 = Column(BigInteger)
-    股东人数增幅 = Column(Float)
-    本期人均持股数量 = Column(BigInteger)
-    上期人均持股数量 = Column(BigInteger)
-    人均持股数量增幅 = Column(Float)
+#     证券代码 = Column(Text, primary_key=True, nullable=False)
+#     证券简称 = Column(Text)
+#     变动日期 = Column(DateTime, primary_key=True, nullable=False)
+#     实际控制人名称 = Column(Text, primary_key=True, nullable=False)
+#     控股数量 = Column(BigInteger)
+#     控股比例 = Column(Float)
+#     直接控制人名称 = Column(Text)
 
 
-class PerformanceForecast(Base):
-    """业绩预告 4.1"""
-    __tablename__ = 'performance_forecast'
+# class Concentration(Base):
+#     """股东人数及持股集中度 3.10"""
+#     __tablename__ = 'concentration'
 
-    公告日期 = Column(DateTime, primary_key=True, nullable=False)
-    证券代码 = Column(Text, primary_key=True, nullable=False)
-    证券简称 = Column(Text)
-    申万二级行业 = Column(Text)
-    报告年度 = Column(DateTime, primary_key=True, nullable=False)
-    业绩类型 = Column(Text)
-    业绩预告内容 = Column(Text)
-    业绩变化原因 = Column(Text)
-    净利润增长幅上限 = Column(Float)
-    净利润增长幅下限 = Column(Float)
+#     证券代码 = Column(Text, primary_key=True, nullable=False)
+#     证券简称 = Column(Text)
+#     变动日期 = Column(DateTime, primary_key=True, nullable=False)
+#     本期股东人数 = Column(BigInteger)
+#     上期股东人数 = Column(BigInteger)
+#     股东人数增幅 = Column(Float)
+#     本期人均持股数量 = Column(BigInteger)
+#     上期人均持股数量 = Column(BigInteger)
+#     人均持股数量增幅 = Column(Float)
+
+
+# class PerformanceForecast(Base):
+#     """业绩预告 4.1"""
+#     __tablename__ = 'performance_forecast'
+
+#     公告日期 = Column(DateTime, primary_key=True, nullable=False)
+#     证券代码 = Column(Text, primary_key=True, nullable=False)
+#     证券简称 = Column(Text)
+#     申万二级行业 = Column(Text)
+#     报告年度 = Column(DateTime, primary_key=True, nullable=False)
+#     业绩类型 = Column(Text)
+#     业绩预告内容 = Column(Text)
+#     业绩变化原因 = Column(Text)
+#     净利润增长幅上限 = Column(Float)
+#     净利润增长幅下限 = Column(Float)
 
 
 class Reorganization(Base):

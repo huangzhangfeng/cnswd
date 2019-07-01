@@ -17,8 +17,9 @@ from .base import DB_DATE_FIELD, TS_DATE_FIELD
 DATE_COL_PAT = re.compile('时间$|日$|日A$|日B$|日期$|年度$|报告期$')
 UNIT_PAT = re.compile(r'[）(（]?(单位：)?(\w*[币股元%‰])[）)]?$')
 CODE_PAT = re.compile(r'([.-]\w{1,3}$)')
-PREFIX_PAT = re.compile(r"^(（?[123456789一二三四五六七八九](.\d{1}.)?.*?[、）]?)")
-MID_PAT = re.compile(r"( ）|[（）()、：-])")
+# 去除前导数字
+PREFIX_PAT = re.compile(r"^\d、|^[（]?[一二三四五六七八九].*?[、）]|^[(]\d[)]")
+MID_PAT = re.compile(r"([)）]$|\b[（）()、：:-])")
 # 尾部单位
 SUFFIX_PAT = re.compile(r'[）(（]?(单位：)?(\w*[^美][股元%‰])[）)]?$')
 FIN_PAT = re.compile(r"(_{1,})$")
@@ -81,7 +82,7 @@ def db_3_1(df):
                        "10日平均（MA10）": "MA10",
                        "30日平均（MA30）": "MA30",
                        "120日均价": "MA120",
-                       "EV/EBITDA":"EV_EBITDA",
+                       "EV/EBITDA": "EV_EBITDA",
                        #    "股票代码": "证券代码",
                        #    "股票简称": "证券简称",
                        "52周均价（360日）均价": "MA360"},
@@ -217,6 +218,16 @@ def _fix_num_unit(df):
     return df
 
 
+def _remove_prefix_num(x):
+    """去除列名称中的前导数字部分"""
+    return PREFIX_PAT.sub('', x)
+
+
+def _remove_suffix_unit(x):
+    """去除列名称中的尾部单位部分"""
+    return SUFFIX_PAT.sub('', x)
+
+
 def _fix_col_name(df):
     """修复列名称"""
     # 更名
@@ -227,8 +238,8 @@ def _fix_col_name(df):
     origin = df.columns
 
     def f(x):
-        x = PREFIX_PAT.sub('', x)
-        x = SUFFIX_PAT.sub('', x)
+        x = _remove_prefix_num(x)
+        x = _remove_suffix_unit(x)
         x = MID_PAT.sub('_', x)
         x = x.replace('Ａ', 'A')
         x = x.replace('Ｂ', 'B')
