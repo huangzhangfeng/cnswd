@@ -213,7 +213,7 @@ def _fix_num_unit(df):
     units = get_unit_dict(df)
     for col, unit in units.items():
         if not pd.api.types.is_numeric_dtype(df[col]):
-            raise TypeError(f'列数据类型应为数字型。实际为{type(df[col])}')
+            raise TypeError(f'应为数字类型。列"{col}"实际为"{df[col].dtype}"')
         df[col] = df[col] * unit
     return df
 
@@ -250,7 +250,10 @@ def _fix_col_name(df):
     return df
 
 
-def fixed_data(df, level, type_):
+def fixed_data(input_df, level, type_):
+    """修复日期、股票代码、数量单位及规范列名称"""
+    # 避免原地修改
+    df = input_df.copy()
     df = _special_fix(df, level, type_)
     df = _fix_code(df)
     df = _fix_date(df)

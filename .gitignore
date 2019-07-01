@@ -336,3 +336,4 @@ ASALocalRun/
 regular_tasks/
 bats/
 passwords.*
+cnswd/tests/t.py
