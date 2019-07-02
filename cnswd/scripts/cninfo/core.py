@@ -151,13 +151,13 @@ def _save_to_sql(level, df, db_name):
 
 
 def _add(level, df, db_name):
-    if df.empty:
-        return
     df = fixed_data(df, level, db_name)
     _save_to_sql(level, df, db_name)
 
 
 def _add_or_replace(level, df, db_name):
+    if df.empty:
+        return
     freq = _get_freq(level, db_name)
     if freq is None:
         _replace(level, df, db_name)
@@ -183,9 +183,8 @@ def _delete_recent_data(level, start, db_name):
     session.close()
 
 
-def refresh_data(level, db_name, end=None):
+def _refresh_data(level, db_name, start=None, end=None):
     """刷新层级项目数据"""
-    start = get_start(level, db_name)
     # 在开始之前，删除可能重复的数据
     if start is not None:
         _delete_recent_data(level, start, db_name)
@@ -193,29 +192,29 @@ def refresh_data(level, db_name, end=None):
         api_class_ = DataBrowser
     elif db_name == 'ts':
         api_class_ = ThematicStatistics
-    api = api_class_(True)
-    df = api.get_data(level, start, end)
-    _add_or_replace(level, df, db_name)
-    api.driver.quit()
+    with api_class_(True) as api:
+        df = api.get_data(level, start, end)
+        _add_or_replace(level, df, db_name)
 
 
-def init_cninfo_data(level, db_name):
+def refresh_data(level, db_name, end=None):
     """初始化数据搜索、专题统计数据"""
+    if end is None:
+        end = pd.Timestamp('now').normalize()
     freq = _get_freq(level, db_name)
     f_maps = _get_field_map(db_name)
     default_date = f_maps[level][1]
     if freq is None:
         # 一次执行，无需循环
-        refresh_data(level, db_name)
+        _refresh_data(level, db_name)
     else:
         start = get_start(level, db_name)
-        # 如果时间跨度太大，不一定能够一次性完成导入；且容易造成内存溢出
         # 按年循环
         default_date = pd.Timestamp(default_date)
         start_date = start if start > default_date else default_date
-        ps = loop_period_by(start_date, pd.Timestamp('now'), 'Y')
-        for _, e in ps:
-            refresh_data(level, db_name, e)
+        ps = loop_period_by(start_date, pd.Timestamp(end), 'Y')
+        for s, e in ps:
+            _refresh_data(level, db_name, s, e)
 
 
 def update_classify_bom():

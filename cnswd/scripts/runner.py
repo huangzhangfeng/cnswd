@@ -6,8 +6,8 @@ from selenium.common.exceptions import TimeoutException
 from cnswd.websource.exceptions import RetryException
 import logbook
 
-# 并行数量太大，反而会有冲突? 暂定2个观察
-max_worker = 2 # max(1, int(os.cpu_count()/2))
+# 并行数量太大，反而会有冲突? 暂定2个观察 单一一个
+max_worker = 1 # max(1, int(os.cpu_count()/2))
 logger = logbook.Logger('runner')
 
 

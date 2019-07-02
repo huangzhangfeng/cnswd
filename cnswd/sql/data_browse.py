@@ -70,7 +70,6 @@ class StockInfo(Base):
     律师事务所 = Column(Text)
 
 
-
 class ActualController(Base):
     """2.1 公司股东实际控制人"""
     __table_args__ = {'sqlite_autoincrement': True}
@@ -92,7 +91,6 @@ class ActualController(Base):
     直接控制人ID = Column(Text)
     直接控制人名称 = Column(Text)
     实际控制人类型 = Column(Text)
-
 
 
 class CompanyShareChange(Base):
@@ -279,6 +277,7 @@ class InvestmentRating(Base):
     目标价格_下限 = Column(Float)
     目标价格_上限 = Column(Float)
 
+
 class PerformanceForecaste(Base):
     """5.1 上市公司业绩预告"""
 
@@ -296,7 +295,6 @@ class PerformanceForecaste(Base):
     本期净利润上限 = Column(Float)
     本期净利润增减幅下限 = Column(Float)
     本期净利润增减幅上限 = Column(Float)
-
 
 
 class Dividend(Base):
@@ -345,7 +343,6 @@ class Dividend(Base):
     B股转赠股份到帐日 = Column(DateTime)
     B股送红股到帐日 = Column(DateTime)
     汇率 = Column(Float)
- 
 
 
 class AdditionalStockPlan(Base):
@@ -375,7 +372,6 @@ class AdditionalStockPlan(Base):
     方案状态 = Column(Text)
     终止公告日期 = Column(DateTime)
     记录标识 = Column(BigInteger, primary_key=True, nullable=False)
-
 
 
 class AdditionalStockImplementation(Base):
@@ -499,7 +495,6 @@ class AdditionalStockImplementation(Base):
     记录标识 = Column(BigInteger, primary_key=True, index=True)
 
 
-
 class SharePlacementPlan(Base):
     """7.3 公司配股预案"""
 
@@ -529,7 +524,6 @@ class SharePlacementPlan(Base):
     配股获准公告日期 = Column(DateTime)
     变更说明 = Column(Text)
     记录标识 = Column(BigInteger)
-
 
 
 class SharePlacementImplementation(Base):
@@ -594,7 +588,6 @@ class SharePlacementImplementation(Base):
     发行方式编码 = Column(Text)
     委托单位 = Column(Text)
     记录标识 = Column(BigInteger)
-
 
 
 class IPO(Base):
@@ -727,7 +720,6 @@ class IPO(Base):
     IPO阶段进展状态 = Column(Text)
     IPO阶段进展状态编码 = Column(Text)
     记录标识 = Column(Text)
- 
 
 
 class TtmIncomeStatement(Base):
@@ -786,7 +778,6 @@ class TtmIncomeStatement(Base):
     分保费用 = Column(Float)
     其中_非流动资产处置利得 = Column(Float)
     其他收益 = Column(Float)
- 
 
 
 class TtmCashFlowStatement(Base):
@@ -887,7 +878,6 @@ class TtmCashFlowStatement(Base):
     投资性房地产的折旧及摊销 = Column(Float)
 
 
-
 class QuarterlyIncomeStatement(Base):
     """8.2.1 个股单季财务利润表"""
 
@@ -944,7 +934,6 @@ class QuarterlyIncomeStatement(Base):
     分保费用 = Column(Float)
     其中_非流动资产处置利得 = Column(Float)
     其他收益 = Column(Float)
-
 
 
 class QuarterlyCashFlowStatement(Base):
@@ -1045,7 +1034,6 @@ class QuarterlyCashFlowStatement(Base):
     投资性房地产的折旧及摊销 = Column(Float)
 
 
-
 class QuarterlyFinancialIndicator(Base):
     """8.2.3 个股单季财务指标"""
 
@@ -1105,7 +1093,6 @@ class QuarterlyFinancialIndicator(Base):
     应收账款占比 = Column(Float)
     存货占比 = Column(Float)
     年化期间费用毛利比 = Column(Float)
-
 
 
 class PeriodlyBalanceSheet(Base):
@@ -1234,7 +1221,6 @@ class PeriodlyBalanceSheet(Base):
     备注 = Column(Text)
 
 
-
 class PeriodlyIncomeStatement(Base):
     """8.3.2 个股报告期利润表"""
 
@@ -1303,7 +1289,6 @@ class PeriodlyIncomeStatement(Base):
     备注 = Column(Text)
     其中_利息费用 = Column(Float)
     其中_利息收入 = Column(Float)
-
 
 
 class PeriodlyCashFlowStatement(Base):
@@ -1416,7 +1401,6 @@ class PeriodlyCashFlowStatement(Base):
     减_现金等价物的期初余额 = Column(Float)
     加_其他原因对现金的影响2 = Column(Float)
     现金及现金等价物净增加额2 = Column(Float)
-
 
 
 class PeriodlyBalanceSheet2007(Base):
@@ -1539,7 +1523,6 @@ class PeriodlyBalanceSheet2007(Base):
     持有待售负债 = Column(BigInteger)
 
 
-
 class PeriodlyIncomeStatement2007(Base):
     """8.3.5 金融类利润表2007版"""
 
@@ -1609,7 +1592,6 @@ class PeriodlyIncomeStatement2007(Base):
     综合收益总额 = Column(Float)
     其中_归属于母公司 = Column(Float)
     其中_归属于少数股东 = Column(Float)
-  
 
 
 class PeriodlyCashFlowStatement2007(Base):
@@ -1719,7 +1701,6 @@ class PeriodlyCashFlowStatement2007(Base):
     减_现金等价物的期初余额 = Column(Float)
     加_其他原因对现金的影响2 = Column(Float)
     现金及现金等价物净增加额 = Column(Float)
-
 
 
 class PeriodlyFinancialIndicator(Base):
@@ -1855,7 +1836,6 @@ class PeriodlyFinancialIndicator(Base):
     股东权益合计 = Column(Float)
 
 
-
 class FinancialIndicatorRanking(Base):
     """8.4.2 财务指标行业排名"""
     证券代码 = Column(String(6), primary_key=True, nullable=False, index=True)
@@ -1898,4 +1878,3 @@ class FinancialIndicatorRanking(Base):
     应收帐款周转率 = Column(Float)
     应收帐款周转率_行业均值 = Column(Float)
     应收帐款周转率_行业排名 = Column(Float)
-

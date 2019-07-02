@@ -356,7 +356,6 @@ class SZXPage(object):
         # 自动调整显示行数，才读取页数
         self._auto_change_view_row_num()
         pages = self._get_pages()
-        i_width = 14
         n_width = 5  # 最多为万
         dfs = []
         na_values = ['-', '无', ';']
@@ -372,7 +371,7 @@ class SZXPage(object):
             if i != (pages - 1):
                 next_page = self.driver.find_element_by_link_text(str(i + 2))
                 next_page.click()
-            self.logger.info(f'>>{item:{i_width}} 第{i+1:{n_width}}页 / 共{pages:{n_width}}页')
+            self.logger.info(f'>> 分页 第{i+1:{n_width}}页 / 共{pages:{n_width}}页')
         return _concat(dfs)
 
     def _change_year(self, css, year):
@@ -387,10 +386,13 @@ class SZXPage(object):
         elem.clear()
         elem.send_keys(date_str, Keys.TAB)
 
-    def _view_message(self, p, level, start, end):
+    def _view_message(self, p, level, start, end, s=''):
         """构造显示信息"""
-        width = 20
-        item = self.name_map[level]
+        width = 30
+        if level is None:
+            item = ''
+        else:
+            item = self.name_map[level]
         if pd.api.types.is_number(start):
             if pd.api.types.is_number(end):
                 msg = f'{start}年{end}季度'
@@ -409,10 +411,10 @@ class SZXPage(object):
             else:
                 msg = ''
         left = f"{p}{item}"
-        return f"{left:{width}} {msg}"
+        return f"{left:{width}} {msg} {s}"
 
-    def _log_info(self, p, level, start, end):
-        self.logger.info(self._view_message(p, level, start, end))
+    def _log_info(self, p, level, start, end, s=''):
+        self.logger.info(self._view_message(p, level, start, end, s))
 
     def scroll(self, size):
         """

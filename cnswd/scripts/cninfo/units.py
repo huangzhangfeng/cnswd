@@ -39,14 +39,24 @@ UNIT_MAPS = {
 }
 
 
+def parse_unit(col_name):
+    """自列名称中解析数量单位，返回dict"""
+    f = UNIT_PAT.findall(col_name)
+    if len(f) == 1:
+        try:
+            return {col_name: UNIT_MAPS[f[0][1]]}
+        except KeyError:
+            # 如解析到'国家持股','B股'
+            return {}
+    else:
+        return {}
+
+
 def get_unit_dict(df):
+    """解析数据框的单位词典"""
     units = {}
-    for c in df.columns:
-        f = UNIT_PAT.findall(c)
-        if len(f) == 1:
-            units[c] = UNIT_MAPS[f[0][1]]
-        elif len(f) > 1:
-            raise ValueError(f"找到结果{f}")
+    for col_name in df.columns:
+        units.update(parse_unit(col_name))
     return units
 
 

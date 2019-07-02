@@ -5,6 +5,7 @@ from pandas.testing import assert_frame_equal
 from numpy.testing import assert_array_almost_equal
 from cnswd.scripts.cninfo.units import (
     _fix_date, _fix_code,
+    parse_unit,
     _fix_num_unit, get_unit_dict,
     _remove_prefix_num, _remove_suffix_unit
 )
@@ -41,6 +42,15 @@ class FixTestCase(unittest.TestCase):
             '证券代码': ['000001', '000001', '000001', 'K0101'],
         })
         assert_frame_equal(actual, expected)
+
+    def test_parse_unit(self):
+        """测试解析数量单位"""
+        col_names = ['境内上市外资股（B股）', '境外上市外资股（H股）', '发行规模(万股)',
+                     '网上有效申购资金(亿元)', '二级配售有效申购股数(亿股)']
+        expected = [None, None, 10000, 100000000.0, 100000000]
+        for col, e in zip(col_names, expected):
+            actual = parse_unit(col)
+            self.assertEqual(actual.get(col,None), e)
 
     def test_fix_num_unit(self):
         """测试修复数量单位"""
