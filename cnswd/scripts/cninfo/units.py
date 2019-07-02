@@ -144,6 +144,16 @@ def db_8_3_4(df):
     return df
 
 
+def db_8_3_5(df):
+    if "基它收益" in df.columns:
+        df.rename(columns={"基它收益": "其他收益"},
+                  inplace=True)
+    if "其它收益" in df.columns:
+        df.rename(columns={"其它收益": "其他收益"},
+                  inplace=True)
+    return df
+
+
 def db_8_4_1(df):
     drops = ['扣除非经常性损益后的净利润(2007版)', '非经常性损益合计(2007版)']
     for c in drops:
@@ -189,6 +199,8 @@ def _factory(level, db_name):
             return db_8_3_2
         elif level == '8.3.4':
             return db_8_3_4
+        elif level == '8.3.5':
+            return db_8_3_5
         elif level == '8.4.1':
             return db_8_4_1
         elif level == '8.4.2':

@@ -134,13 +134,11 @@ def _replace(level, df, db_name):
     # 删除旧数据
     delete_data_of(class_, _get_session(db_name))
     df = fixed_data(df, level, db_name)
-    if db_name == 'db':
-        df['last_refresh_time'] = pd.Timestamp('now')
     engine = _get_engine(db_name)
     if_exists = 'replace'
     table_name = class_.__tablename__
     df.to_sql(table_name, con=engine, if_exists=if_exists, index=False)
-    logger.notice(f"更新 数据库 {db_name} 表{table_name}, 共 {len(df)} 条记录")
+    logger.notice(f"更新 数据库 {db_name} 表 {table_name}, 共 {len(df)} 条记录")
 
 
 def _save_to_sql(level, df, db_name):
@@ -148,8 +146,6 @@ def _save_to_sql(level, df, db_name):
     table_name = class_.__tablename__
     item = DB_NAME[level] if db_name == 'db' else TS_NAME[level]
     engine = _get_engine(db_name)
-    if db_name == 'db':
-        df['last_refresh_time'] = pd.Timestamp('now')
     df.to_sql(table_name, con=engine, if_exists='append', index=False)
     logger.notice(f"{db_name} {item}, 添加 {len(df)} 条记录")
 
@@ -203,6 +199,25 @@ def refresh_data(level, db_name, end=None):
     api.driver.quit()
 
 
+def init_cninfo_data(level, db_name):
+    """初始化数据搜索、专题统计数据"""
+    freq = _get_freq(level, db_name)
+    f_maps = _get_field_map(db_name)
+    default_date = f_maps[level][1]
+    if freq is None:
+        # 一次执行，无需循环
+        refresh_data(level, db_name)
+    else:
+        start = get_start(level, db_name)
+        # 如果时间跨度太大，不一定能够一次性完成导入；且容易造成内存溢出
+        # 按年循环
+        default_date = pd.Timestamp(default_date)
+        start_date = start if start > default_date else default_date
+        ps = loop_period_by(start_date, pd.Timestamp('now'), 'Y')
+        for _, e in ps:
+            refresh_data(level, db_name, e)
+
+
 def update_classify_bom():
     """更新分类BOM表"""
     table = ClassificationBom.__tablename__
@@ -239,22 +254,3 @@ def before_update_stock_classify():
     """更新股票分类前，删除已经存储的本地数据"""
     session = get_session('dataBrowse')
     delete_data_of(Classification, session)
-
-
-def init_cninfo_data(level, db_name):
-    """初始化数据搜索、专题统计数据"""
-    freq = _get_freq(level, db_name)
-    f_maps = _get_field_map(db_name)
-    default_date = f_maps[level][1]
-    if freq is None:
-        # 一次执行，无需循环
-        refresh_data(level, db_name)
-    else:
-        start = get_start(level, db_name)
-        # 如果时间跨度太大，不一定能够一次性完成导入；且容易造成内存溢出
-        # 按年循环
-        default_date = pd.Timestamp(default_date)
-        start_date = start if start > default_date else default_date
-        ps = loop_period_by(start_date, pd.Timestamp('now'), 'Y')
-        for _, e in ps:
-            refresh_data(level, db_name, e)
