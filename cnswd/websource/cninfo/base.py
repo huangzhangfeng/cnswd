@@ -362,7 +362,8 @@ class SZXPage(object):
         # 自动调整显示行数，才读取页数
         self._auto_change_view_row_num()
         pages = self._get_pages()
-        width = 5  # 最多为万
+        i_width = 14
+        n_width = 5  # 最多为万
         dfs = []
         na_values = ['-', '无', ';']
         level = self.current_level
@@ -377,7 +378,7 @@ class SZXPage(object):
             if i != (pages - 1):
                 next_page = self.driver.find_element_by_link_text(str(i + 2))
                 next_page.click()
-            self.logger.info(f'>> {item:{14}} 第{i+1:{width}}页 / 共{pages:{width}}页')
+            self.logger.info(f'>>{item:{i_width}} 第{i+1:{n_width}}页 / 共{pages:{n_width}}页')
         return _concat(dfs)
 
     def _change_year(self, css, year):
@@ -392,7 +393,8 @@ class SZXPage(object):
         elem.clear()
         elem.send_keys(date_str, Keys.TAB)
 
-    def _log_info(self, level, start, end):
+    def _log_info(self, p, level, start, end):
+        i_w = 14
         item = self.name_map[level]
         if pd.api.types.is_number(start):
             if pd.api.types.is_number(end):
@@ -411,7 +413,7 @@ class SZXPage(object):
                     msg = f"{pd.Timestamp(start).strftime(r'%Y-%m-%d')} ~ 至今"
             else:
                 msg = ''
-        self.logger.info(f"{item} {msg}")
+        self.logger.info(f"{p}{item:{i_w}} {msg}")
 
     def scroll(self, size):
         """

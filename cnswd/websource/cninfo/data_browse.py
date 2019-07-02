@@ -210,7 +210,7 @@ class DataBrowser(SZXPage):
         dfs = []
         for s, e in ps:
             t1, t2 = t1_fmt_func(s), t2_fmt_func(e)
-            self._log_info(level, t1, t2)
+            self._log_info('>',level, t1, t2)
             df = self._get_data(level, t1, t2)
             dfs.append(df)
         return _concat(dfs)
@@ -235,7 +235,7 @@ class DataBrowser(SZXPage):
         """
         self.select_level(level)
         self.load_all_code()
-        self._log_info(level, start, end)
+        self._log_info('', level, start, end)
         return self._loop_by_period(level, start, end)
 
     def get_levels_for(self, nth=3):
