@@ -164,7 +164,7 @@ def _replace(level, df, db_name):
     if_exists = 'replace'
     table_name = class_.__tablename__
     df.to_sql(table_name, con=engine, if_exists=if_exists, index=False)
-    logger.notice(f"替换 数据库 {db_name} 表{table_name}, 共 {len(df)} 条记录")
+    logger.notice(f"更新 数据库 {db_name} 表{table_name}, 共 {len(df)} 条记录")
 
 
 def _save_to_sql(level, df, db_name):
@@ -218,10 +218,10 @@ def refresh_data(level, db_name):
     if start is not None:
         _delete_recent_data(level, start, db_name)
     if db_name == 'db':
-        class_ = DataBrowser
+        api_class_ = DataBrowser
     elif db_name == 'ts':
-        class_ = ThematicStatistics
-    with class_(True) as api:
+        api_class_ = ThematicStatistics
+    with api_class_(True) as api:
         df = api.get_data(level, start)
         _add_or_replace(level, df, db_name)
 
@@ -253,7 +253,7 @@ def delete_data_of(class_, session, code=None):
         num = session.query(class_).delete(False)
     else:
         num = session.query(class_).filter(class_.证券代码 == code).delete(False)
-    logger.notice(f"删除可能不完整的数据。表:{class_.__tablename__} {num}行")
+    logger.notice(f"删除数据 表:{class_.__tablename__} {num}行")
     session.commit()
     session.close()
 
@@ -264,15 +264,28 @@ def before_update_stock_classify():
     delete_data_of(Classification, session)
 
 
-# TODO：完成初始化
-def init_data(level, db_name):
-    """初始化数据搜索、专题统计、股票分类数据"""
-    class_ = _get_class(db_name, level)
+def init_cninfo_data(level, db_name):
+    """初始化数据搜索、专题统计数据"""
+    if db_name == 'db':
+        api_class_ = DataBrowser
+    elif db_name == 'ts':
+        api_class_ = ThematicStatistics
     freq = _get_freq(level, db_name)
-    if freq is None:
-        # 一次性完成
-        pass
-    else:
-        # 如果时间跨度太大，不一定能够一次性完成导入；且容易造成内存溢出
-        # 分周期循环
-        pass
+    f_maps = _get_field_map(db_name)
+    # date_field = f_maps[level][0]
+    default_date = f_maps[level][1]
+    with api_class_(True) as api:
+        if freq is None:
+            df = api.get_data(level)
+            # 一次性完成
+            _replace(level, df, db_name)
+        else:
+            start = get_start(level, db_name)
+            # 如果时间跨度太大，不一定能够一次性完成导入；且容易造成内存溢出
+            # 按年循环
+            default_date = pd.Timestamp(default_date)
+            start_date = start if start > default_date else default_date
+            ps = loop_period_by(start_date, pd.Timestamp('now'), 'Y')
+            for s, e in ps:
+                df = api.get_data(level, s, e)
+                _add(level, df, db_name)

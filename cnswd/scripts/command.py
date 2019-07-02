@@ -38,7 +38,7 @@ from .szsh.trading_calendar import update_trading_calendars
 from .szsh.treasury import refresh_treasury
 
 from .cninfo.base import TS_DATE_FIELD, DB_DATE_FIELD
-from .cninfo.core import update_classify_bom, update_stock_classify, before_update_stock_classify, refresh_data
+from .cninfo.core import update_classify_bom, update_stock_classify, before_update_stock_classify, refresh_data, init_cninfo_data
 
 from .utils import create_tables, remove_temp_files, kill_proc
 from .runner import TryToCompleted
@@ -70,7 +70,7 @@ def create(db_dir_name, rewrite):
     """创建数据表"""
     if rewrite:
         click.secho(MESSAGE, fg='red')
-        if click.confirm('删除原数据库，然后重写？'):
+        if click.confirm('删除原数据库，然后重写吗?'):
             create_tables(db_dir_name, True)
     else:
         create_tables(db_dir_name, False)
@@ -230,3 +230,26 @@ def clean_up():
     """
     remove_temp_files()
     kill_proc()
+
+
+# ====================数据初始化==================== #
+@stock.command()
+def init_cninfo():
+    """
+    初始化深圳信数据库
+    1. 首先删除原数据库
+    2. 创建数据库
+    3. 股票分类数据
+    4. 数据搜索
+    5. 专题统计
+    """
+    # update_classify_bom()
+    # run = TryToCompleted(update_stock_classify, range(
+    #     1, 7), (before_update_stock_classify,))
+    # run()
+    func_db = partial(init_cninfo_data, db_name='db')
+    db_run = TryToCompleted(func_db, DB_DATE_FIELD.keys())
+    db_run()
+    func_ts = partial(init_cninfo_data, db_name='ts')
+    ts_run = TryToCompleted(func_ts, TS_DATE_FIELD.keys())
+    ts_run()
