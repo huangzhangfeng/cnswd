@@ -72,82 +72,58 @@ def _get_freq(level, db_name):
         return freq_str[0]
 
 
-def _get_date_start(level, db_name):
-    """日数据类型的开始时间"""
+def _compute_start(end_dates, level, db_name):
+    """计算项目开始日期"""
+    freq = _get_freq(level, db_name)
+    assert freq in ('Y', 'Q', 'M', 'W', 'D', 'B')
+    if freq is None:
+        return None
+    # B -> D
+    if freq == 'B':
+        freq = 'D'
+    today = pd.Timestamp('today')
+    if len(end_dates) == 1:
+        e_1, e_2 = pd.Timestamp(end_dates[0][0]), pd.Timestamp(end_dates[0][0])
+    else:
+        e_1, e_2 = pd.Timestamp(end_dates[0][0]), pd.Timestamp(end_dates[1][0])
+    t_delta_2 = pd.Timedelta(
+        2, unit=freq) if freq != 'Q' else pd.Timedelta(2*3, unit='M')
+    t_delta_1 = pd.Timedelta(
+        1, unit=freq) if freq != 'Q' else pd.Timedelta(1*3, unit='M')
+    # 如大于二个周期，表明提取的网络数据为历史数据，不可能再更新
+    # 此时只需在最后一日后加1天，即为开始日期
+    if today - e_2 > t_delta_2:
+        return pd.Timestamp(e_1) + pd.Timedelta(days=1)
+    else:
+        # 超出一个周期，使用最后日期
+        if today - e_2 > t_delta_1:
+            start = e_1
+        else:
+            start = e_2
+    return start.normalize()
+
+
+def get_start(level, db_name):
+    """返回项目的开始日期"""
+    freq = _get_freq(level, db_name)
+    if freq is None:
+        return None
     session = _get_session(db_name)
     class_ = _get_class(db_name, level)
     f_maps = _get_field_map(db_name)
     date_field = f_maps[level][0]
     default_date = f_maps[level][1]
     expr = getattr(class_, date_field)
-    end_date = session.query(func.max(expr)).scalar()
+    # 降序排列
+    # 指定表的最后二项日期(唯一)
+    end_dates = session.query(expr).order_by(expr.desc()).distinct()[:2]
     session.close()
-    if end_date is None:
-        start_date = pd.Timestamp(default_date)
+    # 为空返回默认值
+    if not end_dates:
+        start_date = pd.Timestamp(default_date).normalize()
     else:
-        start_date = pd.Timestamp(end_date)
-    return start_date.normalize()
-
-
-def get_start(level, db_name):
-    """
-    获取项目开始刷新数据的日期
-
-    逻辑
-    ----
-    1. 查询层级本地数据库最后更新日期;
-    2. 不存在即返回默认开始日期;
-    3. 如存在
-        1. 网络数据可按期间设定的项目，以本地最大日期的次日作为开始日期
-        1. 网络数据按季度设定的项目，自当日回溯至上一个季度首日为开始日期
-        2. 网络数据按年度设定的项目，自当日回溯至上一个年度首日为开始日期
-
-    说明：
-    ----
-    1. 静态数据返回`None`，如股票信息、IPO等项目
-    """
-    freq = _get_freq(level, db_name)
-    today = pd.Timestamp('today')
-    if freq is None:
-        return None
-    end_date = _get_date_start(level, db_name)
-    if freq == 'B':
-        # 股票日线数据中融资融券数据时间有延迟，后溯1天
-        start_date = end_date - pd.Timedelta(1, unit='D')
-    elif freq == 'W':
-        start_date = end_date - pd.Timedelta(1, unit=freq)
-    elif freq == 'D':
-        start_date = end_date + pd.Timedelta(1, unit=freq)
-    elif freq == 'M':
-        if (today - end_date) > pd.Timedelta(1, 'M'):
-            start_date = end_date + pd.Timedelta(1, 'D')
-        else:
-            start_date = end_date - pd.Timedelta(1, unit=freq)
-    elif freq == 'Q':
-        # 为确保数据完整，须在本地数据库最大日期后溯2个季度
-        # 自当前季度倒退2个季度，选择季初日期
-        # 如当前日期 2019-09-30 则开始日期为 2019-04-01
-        # 如当前日期 2019-06-30 则开始日期为 2019-01-01
-        if (today - end_date) > pd.Timedelta(6, 'M'):
-            start_date = end_date + pd.Timedelta(1, 'D')
-        elif (today - end_date) > pd.Timedelta(3, 'M'):
-            start_date = QuarterBegin(
-                -1, normalize=True, startingMonth=1).apply(end_date)
-        else:
-            start_date = QuarterBegin(
-                -2, normalize=True, startingMonth=1).apply(end_date)
-    elif freq == 'Y':
-        # 为确保数据完整，须在本地数据库最大日期后溯2年
-        # 自当前年度倒退2年，选择年初日期
-        if (today - end_date) > pd.Timedelta(2, freq):
-            start_date = end_date + pd.Timedelta(1, 'D')
-        if (today - end_date) > pd.Timedelta(1, freq):
-            start_date = YearBegin(-1, normalize=True, month=1).apply(end_date)
-        else:
-            start_date = YearBegin(-2, normalize=True, month=1).apply(end_date)
-    else:
-        raise ValueError(f'{level} 更新频率字符值错误')
-    return start_date.normalize()
+        start_date = _compute_start(end_dates, level, db_name)
+    return start_date
 
 
 def _replace(level, df, db_name):
@@ -211,7 +187,7 @@ def _delete_recent_data(level, start, db_name):
     session.close()
 
 
-def refresh_data(level, db_name):
+def refresh_data(level, db_name, end=None):
     """刷新层级项目数据"""
     start = get_start(level, db_name)
     # 在开始之前，删除可能重复的数据
@@ -221,9 +197,10 @@ def refresh_data(level, db_name):
         api_class_ = DataBrowser
     elif db_name == 'ts':
         api_class_ = ThematicStatistics
-    with api_class_(True) as api:
-        df = api.get_data(level, start)
-        _add_or_replace(level, df, db_name)
+    api = api_class_(True)
+    df = api.get_data(level, start, end)
+    _add_or_replace(level, df, db_name)
+    api.driver.quit()
 
 
 def update_classify_bom():
@@ -266,26 +243,18 @@ def before_update_stock_classify():
 
 def init_cninfo_data(level, db_name):
     """初始化数据搜索、专题统计数据"""
-    if db_name == 'db':
-        api_class_ = DataBrowser
-    elif db_name == 'ts':
-        api_class_ = ThematicStatistics
     freq = _get_freq(level, db_name)
     f_maps = _get_field_map(db_name)
-    # date_field = f_maps[level][0]
     default_date = f_maps[level][1]
-    with api_class_(True) as api:
-        if freq is None:
-            df = api.get_data(level)
-            # 一次性完成
-            _replace(level, df, db_name)
-        else:
-            start = get_start(level, db_name)
-            # 如果时间跨度太大，不一定能够一次性完成导入；且容易造成内存溢出
-            # 按年循环
-            default_date = pd.Timestamp(default_date)
-            start_date = start if start > default_date else default_date
-            ps = loop_period_by(start_date, pd.Timestamp('now'), 'Y')
-            for s, e in ps:
-                df = api.get_data(level, s, e)
-                _add(level, df, db_name)
+    if freq is None:
+        # 一次执行，无需循环
+        refresh_data(level, db_name)
+    else:
+        start = get_start(level, db_name)
+        # 如果时间跨度太大，不一定能够一次性完成导入；且容易造成内存溢出
+        # 按年循环
+        default_date = pd.Timestamp(default_date)
+        start_date = start if start > default_date else default_date
+        ps = loop_period_by(start_date, pd.Timestamp('now'), 'Y')
+        for _, e in ps:
+            refresh_data(level, db_name, e)

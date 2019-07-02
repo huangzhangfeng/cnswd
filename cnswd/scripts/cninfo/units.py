@@ -172,9 +172,9 @@ def ts_10_3(df):
     return df
 
 
-def _factory(level, type_):
-    assert type_ in ('db', 'ts'), '只支持数据查询与专题统计'
-    if type_ == 'db':
+def _factory(level, db_name):
+    assert db_name in ('db', 'ts'), '只支持数据查询与专题统计'
+    if db_name == 'db':
         assert level in DB_DATE_FIELD.keys(
         ), f'输入层级错误，有效层级为{DB_DATE_FIELD.keys()}'
         if level == '3.1':
@@ -193,7 +193,7 @@ def _factory(level, type_):
             return db_8_4_1
         elif level == '8.4.2':
             return db_8_4_2
-    elif type_ == 'ts':
+    elif db_name == 'ts':
         assert level in TS_DATE_FIELD.keys(
         ), f'输入层级错误，有效层级为{TS_DATE_FIELD.keys()}'
         if level == '10.3':
@@ -201,9 +201,9 @@ def _factory(level, type_):
     return lambda x: x
 
 
-def _special_fix(df, level, type_):
+def _special_fix(df, level, db_name):
     """针对特定项目的特殊处理"""
-    func = _factory(level, type_)
+    func = _factory(level, db_name)
     df = func(df)
     return df
 
@@ -250,11 +250,11 @@ def _fix_col_name(df):
     return df
 
 
-def fixed_data(input_df, level, type_):
+def fixed_data(input_df, level, db_name):
     """修复日期、股票代码、数量单位及规范列名称"""
     # 避免原地修改
     df = input_df.copy()
-    df = _special_fix(df, level, type_)
+    df = _special_fix(df, level, db_name)
     df = _fix_code(df)
     df = _fix_date(df)
     df = _fix_num_unit(df)

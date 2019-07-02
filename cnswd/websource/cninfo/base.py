@@ -151,15 +151,8 @@ class SZXPage(object):
         self.driver.quit()
 
     def __repr__(self):
-        item = f"{self.name_map[self.current_level]}"
-        start = self.current_t1_value
-        end = self.current_t2_value
-        if start and end:
-            return f"{item} {start} ~ {end}"
-        elif start and not end:
-            return f"{item} {start}"
-        else:
-            return f"{item}"
+        msg = self._view_message('', self.current_level, self.current_t1_value, self.current_t2_value)
+        return msg
 
     def _wait_for_activate(self, data_name, status='active'):
         """等待元素激活"""
@@ -276,7 +269,8 @@ class SZXPage(object):
             try:
                 elem = self.driver.find_element_by_css_selector(css)
                 if elem.get_attribute('style') == 'display: inline;':
-                    self.logger.notice(f"{elem.text}")
+                    msg = self + '\n', elem.text
+                    self.logger.notice(msg)
                     return True
             except Exception:
                 return False
@@ -393,8 +387,9 @@ class SZXPage(object):
         elem.clear()
         elem.send_keys(date_str, Keys.TAB)
 
-    def _log_info(self, p, level, start, end):
-        i_w = 14
+    def _view_message(self, p, level, start, end):
+        """构造显示信息"""
+        width = 20
         item = self.name_map[level]
         if pd.api.types.is_number(start):
             if pd.api.types.is_number(end):
@@ -413,7 +408,11 @@ class SZXPage(object):
                     msg = f"{pd.Timestamp(start).strftime(r'%Y-%m-%d')} ~ 至今"
             else:
                 msg = ''
-        self.logger.info(f"{p}{item:{i_w}} {msg}")
+        left = f"{p}{item}"
+        return f"{left:{width}} {msg}"
+
+    def _log_info(self, p, level, start, end):
+        self.logger.info(self._view_message(p, level, start, end))
 
     def scroll(self, size):
         """

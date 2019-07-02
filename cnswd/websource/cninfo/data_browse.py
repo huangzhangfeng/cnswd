@@ -172,7 +172,7 @@ class DataBrowser(SZXPage):
             batch_codes = codes[i*BATCH_CODE_NUM:i *
                                 BATCH_CODE_NUM+BATCH_CODE_NUM]
             self.add_codes(batch_codes)
-            msg = f">>> {batch_codes[0]} ~ {batch_codes[-1]}"
+            msg = f">>> {batch_codes[0]} ~ {batch_codes[-1]} 共{len(batch_codes)}只"
             self.logger.info(msg)
             dfs.append(self._read_html_table())
         return _concat(dfs)
