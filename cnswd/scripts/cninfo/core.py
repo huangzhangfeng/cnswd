@@ -144,10 +144,9 @@ def _replace(level, df, db_name):
 def _save_to_sql(level, df, db_name):
     class_ = _get_class(db_name, level)
     table_name = class_.__tablename__
-    item = DB_NAME[level] if db_name == 'db' else TS_NAME[level]
     engine = _get_engine(db_name)
     df.to_sql(table_name, con=engine, if_exists='append', index=False)
-    logger.notice(f"{db_name} {item}, 添加 {len(df)} 条记录")
+    logger.notice(f"{db_name} {table_name}, 添加 {len(df)} 条记录")
 
 
 def _add(level, df, db_name):
@@ -156,8 +155,6 @@ def _add(level, df, db_name):
 
 
 def _add_or_replace(level, df, db_name):
-    if df.empty:
-        return
     freq = _get_freq(level, db_name)
     if freq is None:
         _replace(level, df, db_name)
@@ -194,7 +191,8 @@ def _refresh_data(level, db_name, start=None, end=None):
         api_class_ = ThematicStatistics
     with api_class_(True) as api:
         df = api.get_data(level, start, end)
-        _add_or_replace(level, df, db_name)
+        if not df.empty:
+            _add_or_replace(level, df, db_name)
 
 
 def refresh_data(level, db_name, end=None):

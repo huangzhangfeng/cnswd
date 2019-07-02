@@ -46,11 +46,14 @@ class FixTestCase(unittest.TestCase):
     def test_parse_unit(self):
         """测试解析数量单位"""
         col_names = ['境内上市外资股（B股）', '境外上市外资股（H股）', '发行规模(万股)',
-                     '网上有效申购资金(亿元)', '二级配售有效申购股数(亿股)']
-        expected = [None, None, 10000, 100000000.0, 100000000]
+                     '网上有效申购资金(亿元)', '二级配售有效申购股数(亿股)',
+                     '重组金额(单位：万元)',
+                     '营业利润(单位：元)', '占总股本比例(单位：%)']
+        expected = [None, None, 10000, 100000000.0,
+                    100000000, 10000.0, 1.0, 0.01]
         for col, e in zip(col_names, expected):
             actual = parse_unit(col)
-            self.assertEqual(actual.get(col,None), e)
+            self.assertEqual(actual.get(col, None), e)
 
     def test_fix_num_unit(self):
         """测试修复数量单位"""
@@ -62,7 +65,7 @@ class FixTestCase(unittest.TestCase):
             assert_array_almost_equal(origin[col] * adj, actual[col])
 
     def test_remove_prefix_num(self):
-        """测似去除列名称中的前导数字"""
+        """测试去除列名称中的前导数字"""
         origin = [
             '一年内到期的非流动资产',
             '三费合计',
@@ -84,4 +87,27 @@ class FixTestCase(unittest.TestCase):
             '将净利润调节为经营活动现金流量：'
         ]
         actual = [_remove_prefix_num(x) for x in origin]
+        self.assertListEqual(actual, expected)
+
+    def test_remove_suffix_unit(self):
+        """测试去除列名称尾部单位"""
+        origin = ['境内上市外资股（B股）',
+                  '其中：限售H股',
+                  '发行规模(万股)',
+                  '发行规模 万股',
+                  '网上有效申购资金(亿元)',
+                  '二级配售有效申购股数(亿股)',
+                  '重组金额(单位：万元)',
+                  '营业利润(单位：元)',
+                  '占总股本比例(单位：%)']
+        expected =['境内上市外资股（B股）',
+                  '其中：限售H股',
+                  '发行规模',
+                  '发行规模',
+                  '网上有效申购资金',
+                  '二级配售有效申购股数',
+                  '重组金额',
+                  '营业利润',
+                  '占总股本比例']
+        actual = [_remove_suffix_unit(x) for x in origin]
         self.assertListEqual(actual, expected)

@@ -21,7 +21,9 @@ CODE_PAT = re.compile(r'([.-]\w{1,3}$)')
 PREFIX_PAT = re.compile(r"^\d、|^[（]?[一二三四五六七八九].*?[、）]|^[(]\d[)]")
 MID_PAT = re.compile(r"([)）]$|\b[（）()、：:-])")
 # 尾部单位
-SUFFIX_PAT = re.compile(r'[）(（]?(单位：)?(\w*[^美][股元%‰])[）)]?$')
+# SUFFIX_PAT = re.compile(r'[）(（]?(单位：)?(\w*[^美][股元%‰])[）)]?$')
+SUFFIX_PAT = re.compile(
+    r'\s.*?[股元]|[(（)]单位[：:].*?[)）]|[(（)][万亿]?[股元][)）]|[(（ )]?[%‰][)）]?$')
 FIN_PAT = re.compile(r"(_{1,})$")
 
 UNIT_MAPS = {
