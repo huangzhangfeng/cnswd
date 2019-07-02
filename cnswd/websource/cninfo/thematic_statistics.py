@@ -118,7 +118,7 @@ class ThematicStatistics(SZXPage):
         dfs = []
         for i, (s, e) in enumerate(ps, 1):
             t1, t2 = t1_fmt_func(s), t2_fmt_func(e)
-            self.logger.info(self)
+            self._log_info('>',level, t1, t2)
             df = self._get_data(level, t1, t2)
             dfs.append(df)
             if i % 10 == 0:
