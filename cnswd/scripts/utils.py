@@ -79,7 +79,7 @@ def find_procs_by_name(name):
     return ls
 
 
-def kill_proc():
+def kill_firefox():
     """杀死可能残留的进程"""
     for e in ['geckodriver.exe','firefox.exe']:
         for p in find_procs_by_name(e):

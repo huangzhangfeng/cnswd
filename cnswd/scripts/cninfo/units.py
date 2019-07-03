@@ -113,10 +113,23 @@ def db_6_1(df):
     return df
 
 
+def db_7_2(df):
+    df.rename(columns={"A 类投资者网下申购中签比例": "A类投资者网下申购中签比例",
+                       "B 类投资者网下申购中签比例": "B类投资者网下申购中签比例",
+                       },
+              inplace=True)
+    return df
+
+
+def db_7_4(df):
+    df.rename(columns={"配股失败，退还申购款日期": "配股失败_退还申购款日期", },
+              inplace=True)
+    return df
+
+
 def db_8_2_3(df):
     df.rename(columns={"基本获利能力(EBIT)": "基本获利能力_EBIT"},
               inplace=True)
-    df = _fix_col_name(df)
     return df
 
 
@@ -167,7 +180,9 @@ def db_8_3_5(df):
 
 
 def db_8_4_1(df):
-    drops = ['扣除非经常性损益后的净利润(2007版)', '非经常性损益合计(2007版)']
+    drops = ['扣除非经常性损益后的净利润(2007版)',
+             '非经常性损益合计(2007版)',
+             '净资产收益率.1']
     for c in drops:
         if c in df.columns:
             df.drop(columns=c, inplace=True)
@@ -195,14 +210,18 @@ def ts_10_3(df):
 
 
 def _factory(level, db_name):
-    assert db_name in ('db', 'ts'), '只支持数据查询与专题统计'
-    if db_name == 'db':
+    assert db_name in ('dataBrowse', 'thematicStatistics'), '只支持数据查询与专题统计'
+    if db_name == 'dataBrowse':
         assert level in DB_DATE_FIELD.keys(
         ), f'输入层级错误，有效层级为{DB_DATE_FIELD.keys()}'
         if level == '3.1':
             return db_3_1
         elif level == '6.1':
             return db_6_1
+        elif level == '7.2':
+            return db_7_2
+        elif level == '7.4':
+            return db_7_4
         elif level == '8.2.3':
             return db_8_2_3
         elif level == '8.3.1':
@@ -217,7 +236,7 @@ def _factory(level, db_name):
             return db_8_4_1
         elif level == '8.4.2':
             return db_8_4_2
-    elif db_name == 'ts':
+    elif db_name == 'thematicStatistics':
         assert level in TS_DATE_FIELD.keys(
         ), f'输入层级错误，有效层级为{TS_DATE_FIELD.keys()}'
         if level == '10.3':

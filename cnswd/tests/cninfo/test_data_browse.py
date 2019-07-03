@@ -1,7 +1,7 @@
 import unittest
 import time
 import pandas as pd
-from cnswd.websource.cninfo.data_browse import DataBrowser
+from cnswd.websource.cninfo.data_browse import DataBrowse
 from cnswd.websource.cninfo.constants import DB_NAME
 from pandas.testing import assert_frame_equal
 
@@ -10,7 +10,7 @@ class DataBrowserTestCase(unittest.TestCase):
     """深证信专题统计测试"""
 
     def setUp(self):
-        self.api = DataBrowser()
+        self.api = DataBrowse()
 
     def tearDown(self):
         self.api.driver.quit()

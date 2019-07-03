@@ -3,15 +3,11 @@
 
 用法
 # 创建数据库
-$ stock create --db_dir_name=cn
+$ stock create --db_dir_name=dataBrowse
 # 刷新股票日线数据
-$ stock stock-daily
+$ stock db-refresh
 
-建议使用后台任务计划，自动刷新数据。参考`cnswd/regular_tasks/bg_tasks.cron`说明
-
-深证信凌晨时段比较可靠。
-
-简化设计，如当前正使用Firefox浏览器，完成数据刷新后会关闭所有浏览器。
+使用后台任务计划，自动刷新数据
 
 """
 from __future__ import absolute_import, division, print_function
@@ -36,11 +32,10 @@ from .szsh.tct_gn import refresh as tct_gn_refresh
 from .szsh.ths_gn import update_gn_list, update_gn_time
 from .szsh.trading_calendar import update_trading_calendars
 from .szsh.treasury import refresh_treasury
+from .cninfo.refresher import DBRefresher, TSRefresher
+from .cninfo.core import update_classify_bom, update_stock_classify, before_update_stock_classify
 
-from .cninfo.base import TS_DATE_FIELD, DB_DATE_FIELD
-from .cninfo.core import update_classify_bom, update_stock_classify, before_update_stock_classify, refresh_data
-
-from .utils import create_tables, remove_temp_files, kill_proc
+from .utils import create_tables, remove_temp_files, kill_firefox
 from .runner import TryToCompleted
 
 
@@ -79,25 +74,17 @@ def create(db_dir_name, rewrite):
 # ====================专题统计数据库==================== #
 
 @stock.command()
-@click.argument('levels', nargs=-1)
-def ts_data(levels):
-    """刷新专题统计数据"""
-    if not levels:
-        levels = TS_DATE_FIELD.keys()
-    func = partial(refresh_data, db_name='ts')
-    run = TryToCompleted(func, levels)
-    run()
+def db_data():
+    """刷新专题统计"""
+    r = DBRefresher()
+    r.run()
 
 # ====================数据搜索数据库==================== #
 @stock.command()
-@click.argument('levels', nargs=-1)
-def db_data(levels):
-    """刷新股票项目数据"""
-    if not levels:
-        levels = DB_DATE_FIELD.keys()
-    func = partial(refresh_data, db_name='db')
-    run = TryToCompleted(func, levels)
-    run()
+def ts_data():
+    """刷新数据搜索"""
+    r = TSRefresher()
+    r.run()
 
 
 @stock.command()
@@ -108,28 +95,6 @@ def db_classify():
         1, 7), (before_update_stock_classify,))
     run()
 
-
-@stock.command()
-@click.option('--end', default=None, help='截止日期')
-def init_cninfo(end):
-    """
-    初始化深圳信数据库
-    1. 首先删除原数据库
-    2. 创建数据库
-    3. 股票分类数据
-    4. 数据搜索
-    5. 专题统计
-    """
-    # update_classify_bom()
-    # run = TryToCompleted(update_stock_classify, range(
-    #     1, 7), (before_update_stock_classify,))
-    # run()
-    func_db = partial(refresh_data, db_name='db', end=end)
-    db_run = TryToCompleted(func_db, DB_DATE_FIELD.keys())
-    db_run()
-    func_ts = partial(refresh_data, db_name='ts', end=end)
-    ts_run = TryToCompleted(func_ts, TS_DATE_FIELD.keys())
-    ts_run()
 
 # ====================INFO数据库==================== #
 
@@ -250,4 +215,4 @@ def clean_up():
     如每日凌晨在没有后台抓取数据任务时，执行此任务
     """
     remove_temp_files()
-    kill_proc()
+    kill_firefox()

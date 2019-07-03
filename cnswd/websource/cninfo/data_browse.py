@@ -31,7 +31,7 @@ PLATE_MAPS = {
 }
 
 
-class DataBrowser(SZXPage):
+class DataBrowse(SZXPage):
     """数据搜索页"""
     # 变量
     code_loaded = False
@@ -52,6 +52,13 @@ class DataBrowser(SZXPage):
     level_input_css = '.api-search-left > input:nth-child(1)'
     level_query_bnt_css = '.api-search-left > i:nth-child(2)'
 
+    def _select_all_fields(self):
+        """全选字段"""
+        field_label_css = 'div.select-box:nth-child(2) > div:nth-child(1) > label:nth-child(1)'
+        field_btn_css = 'div.arrows-box:nth-child(3) > div:nth-child(1) > button:nth-child(1)'
+        # 全选数据字段
+        self._add_or_delete_all(field_label_css, field_btn_css)
+
     def select_level(self, level):
         """
         设定数据项目
@@ -61,16 +68,11 @@ class DataBrowser(SZXPage):
             1. 全选数据字段
             2. 设定相应的日期css
         """
-        field_label_css = 'div.select-box:nth-child(2) > div:nth-child(1) > label:nth-child(1)'
-        field_btn_css = 'div.arrows-box:nth-child(3) > div:nth-child(1) > button:nth-child(1)'
         if self.current_level != level:
-            # 滚动顶部
-            # self.scroll(0.0)
             self._select_level(level)
             # self.driver.save_screenshot(f'{level}.png')
             self.current_level = level
-            # 全选数据字段
-            self._add_or_delete_all(field_label_css, field_btn_css)
+            self._select_all_fields()
 
     def load_all_code(self):
         """全选股票代码"""
@@ -187,6 +189,7 @@ class DataBrowser(SZXPage):
         # return self._get_data_by_batch_codes()
 
     def _loop_by_period(self, level, start, end):
+        """分时期段读取数据"""
         loop_str = self.date_map[level][0]
         include = self.date_map[level][1]
         if loop_str is None:
@@ -227,8 +230,9 @@ class DataBrowser(SZXPage):
 
 
         Usage:
-            >>> api = WebApi()
+            >>> api = DataBrowse()
             >>> api.get_data('4.1',2018-01-01','2018-08-01')
+            >>> api.driver.quit()
 
         Returns:
             pd.DataFrame -- 如期间没有数据，返回长度为0的空表
@@ -237,6 +241,27 @@ class DataBrowser(SZXPage):
         self.load_all_code()
         self._log_info('==> ', level, start, end, " <==")
         return self._loop_by_period(level, start, end)
+
+    @property
+    def is_available(self):
+        """
+        API可用状态
+
+        数据搜索经常会出现异常。
+        判定标准为加载全部代码，读取基本资料信息。如行数与股票代码数量一致，表明正常；否则异常。
+
+        如果此时状态异常，很容易丢失数据，导致数据不完整。须立即停止刷新。
+        """
+        level = '1.1'
+        self.select_level(level)
+        self.load_all_code()
+        span_css = 'div.select-box:nth-child(3) > div:nth-child(1) > span:nth-child(2)'
+        expected = self._get_count_tip(span_css)
+        # 可以选择单一字段，加快检查状态速度
+        self.driver.find_element_by_css_selector(self.preview_btn_css).click()
+        self._wait_for_preview()
+        actual = self._get_row_num()
+        return expected == actual
 
     def get_levels_for(self, nth=3):
         """获取第nth种类别的分类层级"""

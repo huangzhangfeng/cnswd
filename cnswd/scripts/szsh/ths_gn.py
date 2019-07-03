@@ -17,7 +17,7 @@ from cnswd.sql.szsh import THSGN
 from cnswd.utils import loop_codes
 from cnswd.websource.ths import THS
 
-from ..utils import is_trading_time, kill_proc
+from ..utils import is_trading_time, kill_firefox
 
 max_worker = 1 # max(1, int(os.cpu_count()/2)) 网站对多进程有限制
 
@@ -110,7 +110,7 @@ def update_gn_list():
     except Exception:
         pass
     finally:
-        kill_proc()
+        kill_firefox()
 
 
 def update_gn_time():
@@ -125,4 +125,4 @@ def update_gn_time():
     except Exception:
         pass
     finally:
-        kill_proc()
+        kill_firefox()

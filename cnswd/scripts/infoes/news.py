@@ -67,5 +67,5 @@ def refresh_news():
             session.rollback()
             # # 排序后的数据，如已经存在，则退出循环
             # break
-    logger.info(f'添加{count:4}条')
+    logger.info(f'添加{count:4} 行')
     session.close()

@@ -21,12 +21,6 @@ from .constants import TS_NAME, TS_CSS, TS_DATE_FREQ
 from .base import SZXPage, _concat
 
 
-# def _split_start_and_end(df):
-#     df['公告日期'] = df['公告统计区间'].map(lambda x: x.split('--')[0])
-#     del df['公告统计区间']
-#     return df
-
-
 class ThematicStatistics(SZXPage):
     """深证信专题统计api"""
     current_t1_value = ''      # 开始日期
@@ -34,7 +28,7 @@ class ThematicStatistics(SZXPage):
 
     # 改写的属性
     preview_btn_css = '.thematicStatisticsBtn'
-    wait_for_preview_css = '.fixed-table-header'
+    wait_for_preview_css = '.fixed-table-loading' # '.fixed-table-header'
     view_selection = {1: 20, 2: 50, 3: 100, 4: 200}
     name_map = TS_NAME
     css_map = TS_CSS
@@ -118,7 +112,7 @@ class ThematicStatistics(SZXPage):
         dfs = []
         for i, (s, e) in enumerate(ps, 1):
             t1, t2 = t1_fmt_func(s), t2_fmt_func(e)
-            self._log_info('>',level, t1, t2)
+            self._log_info('>', level, t1, t2)
             df = self._get_data(level, t1, t2)
             dfs.append(df)
             if i % 10 == 0:
@@ -148,9 +142,6 @@ class ThematicStatistics(SZXPage):
             # 由于专题统计会预先加载默认数据，需要等待日期元素可见后，才可执行下一步
             self._wait_for_visibility(self.current_t1_css, self.api_name)
         df = self._loop_by_period(level, start, end)
-        # 排除区间统计表
-        # if level in ('13.6', '13.7') and not df.empty:
-        #     df = _split_start_and_end(df)
         return df
 
     def _loop_options(self, level):
@@ -185,3 +176,17 @@ class ThematicStatistics(SZXPage):
         select = Select(elem)
         select.select_by_value("")
         return self._read_html_table()
+
+    @property
+    def is_available(self):
+        """
+        故障概率低
+        """
+        return True
+
+    def _wait_for_preview(self):
+        """等待预览结果完全呈现"""
+        # 加载完成标准不一致
+        css = '#contentTable'
+        self._wait_for_all_presence(css)
+        self.driver.implicitly_wait(0.3)

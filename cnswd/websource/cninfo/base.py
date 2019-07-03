@@ -90,7 +90,7 @@ class SZXPage(object):
     wait_for_preview_css = ''  # 检验预览结果css
     view_selection = {}        # 可调显示行数 如 {1:10,2:20,3:50}
 
-    def __init__(self, clear_cache=False):
+    def __init__(self, clear_cache=True):
         start = time.time()
         self.driver = make_headless_browser()
         self.logger = logbook.Logger("深证信")
@@ -151,7 +151,8 @@ class SZXPage(object):
         self.driver.quit()
 
     def __repr__(self):
-        msg = self._view_message('', self.current_level, self.current_t1_value, self.current_t2_value)
+        msg = self._view_message(
+            '', self.current_level, self.current_t1_value, self.current_t2_value)
         return msg
 
     def _wait_for_activate(self, data_name, status='active'):
@@ -407,7 +408,7 @@ class SZXPage(object):
                 if end:
                     msg += f" ~ {pd.Timestamp(end).strftime(r'%Y-%m-%d')}"
                 else:
-                    msg = f"{pd.Timestamp(start).strftime(r'%Y-%m-%d')} ~ 至今"
+                    msg = f"{pd.Timestamp(start).strftime(r'%Y-%m-%d')} ~ {pd.Timestamp('today').strftime(r'%Y-%m-%d')}"
             else:
                 msg = ''
         left = f"{p}{item}"

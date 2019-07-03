@@ -13,9 +13,9 @@ from sqlalchemy import func
 from cnswd.utils import loop_period_by
 from cnswd.sql.base import get_engine, get_session
 from cnswd.sql.data_browse import Classification, ClassificationBom, StockInfo
-from cnswd.websource.cninfo.data_browse import DataBrowser
+
 from cnswd.websource.cninfo.constants import DB_NAME, DB_DATE_FREQ, TS_NAME, TS_DATE_FREQ
-from cnswd.websource.cninfo.data_browse import DataBrowser
+from cnswd.websource.cninfo.data_browse import DataBrowse
 from cnswd.websource.cninfo.thematic_statistics import ThematicStatistics
 from .base import DB_DATE_FIELD, DB_MODEL_MAPS, TS_DATE_FIELD, TS_MODEL_MAPS
 from .units import fixed_data
@@ -25,9 +25,9 @@ logger = logbook.Logger('数据刷新')
 
 
 def _get_model_map(db_name):
-    if db_name == 'db':
+    if db_name == 'dataBrowse':
         return DB_MODEL_MAPS
-    elif db_name == 'ts':
+    elif db_name == 'thematicStatistics':
         return TS_MODEL_MAPS
 
 
@@ -36,30 +36,30 @@ def _get_class(db_name, level):
 
 
 def _get_date_freq_map(db_name):
-    if db_name == 'db':
+    if db_name == 'dataBrowse':
         return DB_DATE_FREQ
-    elif db_name == 'ts':
+    elif db_name == 'thematicStatistics':
         return TS_DATE_FREQ
 
 
 def _get_field_map(db_name):
-    if db_name == 'db':
+    if db_name == 'dataBrowse':
         return DB_DATE_FIELD
-    elif db_name == 'ts':
+    elif db_name == 'thematicStatistics':
         return TS_DATE_FIELD
 
 
 def _get_session(db_name):
-    if db_name == 'db':
+    if db_name == 'dataBrowse':
         return get_session('dataBrowse')
-    elif db_name == 'ts':
+    elif db_name == 'thematicStatistics':
         return get_session('thematicStatistics')
 
 
 def _get_engine(db_name):
-    if db_name == 'db':
+    if db_name == 'dataBrowse':
         return get_engine('dataBrowse')
-    elif db_name == 'ts':
+    elif db_name == 'thematicStatistics':
         return get_engine('thematicStatistics')
 
 
@@ -138,7 +138,7 @@ def _replace(level, df, db_name):
     if_exists = 'replace'
     table_name = class_.__tablename__
     df.to_sql(table_name, con=engine, if_exists=if_exists, index=False)
-    logger.notice(f"更新 数据库 {db_name} 表 {table_name}, 共 {len(df)} 条记录")
+    logger.notice(f"更新 {db_name} {table_name} {len(df)} 行")
 
 
 def _save_to_sql(level, df, db_name):
@@ -146,7 +146,7 @@ def _save_to_sql(level, df, db_name):
     table_name = class_.__tablename__
     engine = _get_engine(db_name)
     df.to_sql(table_name, con=engine, if_exists='append', index=False)
-    logger.notice(f"{db_name} {table_name}, 添加 {len(df)} 条记录")
+    logger.notice(f"添加 {db_name} {table_name} {len(df)} 行")
 
 
 def _add(level, df, db_name):
@@ -174,52 +174,69 @@ def _delete_recent_data(level, start, db_name):
     num = session.query(class_).filter(
         expr >= start).delete(False)
     st = start.strftime(r'%Y-%m-%d')
-    msg = f"删除数据库 {db_name} 表:{table_name} 自{st}开始 {num}行"
+    msg = f"删除 {db_name} {table_name} {st} 开始 {num}行"
     logger.notice(msg)
     session.commit()
     session.close()
 
 
-def _refresh_data(level, db_name, start=None, end=None):
-    """刷新层级项目数据"""
-    # 在开始之前，删除可能重复的数据
-    if start is not None:
-        _delete_recent_data(level, start, db_name)
-    if db_name == 'db':
-        api_class_ = DataBrowser
-    elif db_name == 'ts':
-        api_class_ = ThematicStatistics
-    with api_class_(True) as api:
-        df = api.get_data(level, start, end)
-        if not df.empty:
-            _add_or_replace(level, df, db_name)
-
-
 def refresh_data(level, db_name, end=None):
-    """初始化数据搜索、专题统计数据"""
+    """刷新层级项目数据"""
     if end is None:
         end = pd.Timestamp('now').normalize()
     freq = _get_freq(level, db_name)
     f_maps = _get_field_map(db_name)
     default_date = f_maps[level][1]
-    if freq is None:
-        # 一次执行，无需循环
-        _refresh_data(level, db_name)
-    else:
-        start = get_start(level, db_name)
-        # 按年循环
-        default_date = pd.Timestamp(default_date)
-        start_date = start if start > default_date else default_date
-        ps = loop_period_by(start_date, pd.Timestamp(end), 'Y')
-        for s, e in ps:
-            _refresh_data(level, db_name, s, e)
+    if db_name == 'dataBrowse':
+        api_class_ = DataBrowse
+    elif db_name == 'thematicStatistics':
+        api_class_ = ThematicStatistics
+    with api_class_(True) as api:
+        if freq is None:
+            # 一次执行，无需循环
+            df = api.get_data(level)
+            if not df.empty:
+                _add_or_replace(level, df, db_name)
+        else:
+            start = get_start(level, db_name)
+            # 按年循环
+            default_date = pd.Timestamp(default_date)
+            start_date = start if start > default_date else default_date
+            # 在开始之前，删除可能重复的数据
+            if start_date is not None:
+                _delete_recent_data(level, start_date, db_name)
+            ps = loop_period_by(start_date, pd.Timestamp(end), 'Y', False)
+            for s, e in ps:
+                df = api.get_data(level, s, e)
+                if not df.empty:
+                    _add_or_replace(level, df, db_name)
+
+
+# def refresh_data(level, db_name, end=None):
+#     """初始化数据搜索、专题统计数据"""
+#     if end is None:
+#         end = pd.Timestamp('now').normalize()
+#     freq = _get_freq(level, db_name)
+#     f_maps = _get_field_map(db_name)
+#     default_date = f_maps[level][1]
+#     if freq is None:
+#         # 一次执行，无需循环
+#         _refresh_data(level, db_name)
+#     else:
+#         start = get_start(level, db_name)
+#         # 按年循环
+#         default_date = pd.Timestamp(default_date)
+#         start_date = start if start > default_date else default_date
+#         ps = loop_period_by(start_date, pd.Timestamp(end), 'Y')
+#         for s, e in ps:
+#             _refresh_data(level, db_name, s, e)
 
 
 def update_classify_bom():
     """更新分类BOM表"""
     table = ClassificationBom.__tablename__
     engine = get_engine('dataBrowse')
-    with DataBrowser(True) as api:
+    with DataBrowse(True) as api:
         bom = api.classify_bom
         bom.to_sql(table, engine, if_exists='replace')
         api.logger.info(f'表：{table} 更新 {len(bom):>4}行')
@@ -228,7 +245,7 @@ def update_classify_bom():
 def update_stock_classify(n):
     """更新第n组股票分类树信息"""
     table = Classification.__tablename__
-    with DataBrowser(True) as api:
+    with DataBrowse(True) as api:
         df = api.get_classify_tree(n)
         if not df.empty:
             df.to_sql(table, get_engine('dataBrowse'),
