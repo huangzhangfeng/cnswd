@@ -10,7 +10,7 @@ import re
 import logbook
 import pandas as pd
 from logbook.more import ColorizedStderrHandler
-from selenium.common.exceptions import ElementNotInteractableException
+from selenium.common.exceptions import ElementNotInteractableException, NoSuchElementException
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -260,8 +260,10 @@ class SZXPage(object):
         try:
             self.driver.find_element_by_css_selector('.no-records-found')
             return True
-        except Exception:
+        except NoSuchElementException:
             return False
+        except Exception as e:
+            self.logger.error(e)
 
     def _has_exception(self):
         """等待预览呈现后，尽管有数据返回，检查是否存在异常提示"""
