@@ -350,6 +350,8 @@ class SZXPage(object):
         # 等待预览数据完成加载。如数据量大，可能会比较耗时。最长约6秒。
         self._wait_for_preview()
         # 是否无数据返回
+        # 测试表明，专题统计不一定能准确捕获`.no-records-found`提示，导致后续无法获取数据行数
+        # 多次运行，可解决此类问题
         if self._no_data():
             return pd.DataFrame()
         # 是否存在异常
