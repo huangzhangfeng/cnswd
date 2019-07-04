@@ -211,7 +211,6 @@ class Refresher(object):
                     try:
                         self._loop_by_level(api, level, freq)
                         status['完成状态'] = '完成'
-                        status['尝试次数'] = i+1
                     except RetryException as e:
                         # TODO:观察
                         # 直接退出?或者长时间休眠?
@@ -227,6 +226,7 @@ class Refresher(object):
                         time.sleep(np.random.random())
                         # api.reset()
                     finally:
+                        status['尝试次数'] = i+1
                         status['完成时间'] = pd.Timestamp('now')
                         update_record(index, status)
         self._report(self.level_name.keys())
