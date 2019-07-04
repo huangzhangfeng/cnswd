@@ -16,26 +16,21 @@ from .base import DB_DATE_FIELD, DB_MODEL_MAPS, TS_DATE_FIELD, TS_MODEL_MAPS
 from .units import fixed_data
 
 record_path = os.path.join(data_root('record'), 'cninfo.csv')
-# 记录以下事项，并保持在本地文件
-# 刷新标志
-#  0  未执行
-#  1  完成
-# -1  异常
 
 
 def get_record(index):
     try:
         return pd.read_csv(record_path, index_col=0).loc[index].to_dict()
     except FileNotFoundError:
-        df = pd.DataFrame({'flag': 0,
-                           'times': 0,
-                           'time': pd.Timestamp('now'),
-                           'remark': ''},
+        df = pd.DataFrame({'完成状态': '未执行',
+                           '尝试次数': 0,
+                           '完成时间': pd.Timestamp('now'),
+                           '备注': ''},
                           index=[index])
         df.to_csv(record_path)
         return pd.read_csv(record_path, index_col=0).loc[index].to_dict()
     except KeyError:
-        return {'flag': 0, 'times': 0, 'time': pd.Timestamp('now'), 'remark': ''}
+        return {'完成状态': '未执行', '尝试次数': 0, '完成时间': pd.Timestamp('now'), '备注': ''}
 
 
 def update_record(index, status):
@@ -169,8 +164,7 @@ class Refresher(object):
         df = fixed_data(df, level, self.db_name)
         self._to_sql(api, level, df, 'replace')
 
-    def _loop_by_level(self, api, level):
-        freq = self.get_freq(level)
+    def _loop_by_level(self, api, level, freq):
         if freq is None:
             # 一次执行，无需循环
             df = api.get_data(level)
@@ -184,8 +178,8 @@ class Refresher(object):
             # 在开始之前，删除可能重复的数据
             if start_date is not None:
                 self._delete(api, level, start_date)
-            # 按年循环
-            ps = loop_period_by(start_date, self.end_date, 'Y', False)
+            # 按freq循环
+            ps = loop_period_by(start_date, self.end_date, freq, False)
             for s, e in ps:
                 df = api.get_data(level, s, e)
                 if not df.empty:
@@ -199,12 +193,14 @@ class Refresher(object):
         """判定项目是否完成刷新"""
         d = self.get_status_dict(level)
         now = pd.Timestamp('now')
-        is_available = now - pd.Timestamp(d['time']) < pd.Timedelta(hours=12)
-        return d['flag'] == 1 and is_available
+        is_available = now - pd.Timestamp(d['完成时间']) < pd.Timedelta(hours=12)
+        return d['完成状态'] == '完成' and is_available
 
-    def run(self):
+    def __call__(self):
         with self.api_class(True) as api:
             for level in self.level_name.keys():
+                freq = self.get_freq(level)
+                index = f"{self.api_class.__name__}{level}"
                 status = self.get_status_dict(level)
                 for i in range(self.retry_times):
                     # 如果已经完成，则返回
@@ -213,26 +209,36 @@ class Refresher(object):
                         break
                     api.logger.info(f"{level:{12}} 第{i+1:{2}}次尝试")
                     try:
-                        self._loop_by_level(api, level)
-                        status['flag'] = 1
-                        status['times'] = i+1
+                        self._loop_by_level(api, level, freq)
+                        status['完成状态'] = '完成'
+                        status['尝试次数'] = i+1
                     except RetryException as e:
                         # TODO:观察
                         # 直接退出?或者长时间休眠?
                         if not api.is_available:
                             sys.exit(0)
-                        status['flag'] = -1  # 可重试
-                        status['remark'] = f"{e}"
+                        status['完成状态'] = '重试'
+                        status['备注'] = f"{e}"
                         time.sleep(np.random.random())
-                        api.reset()
+                        # api.reset()
                     except Exception as e:
-                        status['flag'] = 0
-                        status['remark'] = f"{e}"
+                        status['完成状态'] = '异常'
+                        status['备注'] = f"{e}"
                         time.sleep(np.random.random())
-                        api.reset()
+                        # api.reset()
                     finally:
-                        status['time'] = pd.Timestamp('now')
+                        status['完成时间'] = pd.Timestamp('now')
                         update_record(index, status)
+        self._report(self.level_name.keys())
+
+    def _report(self, levels):
+        """报告执行状态"""
+        for level in levels:
+            status = self.get_status_dict(level)
+            msg = f"{self.api_class.__name__} {level} 执行结果：\n"
+            for k, v in status.items():
+                msg += f">>{k:{20}} {v} \n"
+            print(msg)
 
 
 class DBRefresher(Refresher):

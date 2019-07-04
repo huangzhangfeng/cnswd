@@ -52,6 +52,10 @@ class ThematicStatistics(SZXPage):
             self._select_level(level)
             # self.driver.save_screenshot(f'{level}.png')
             self.current_level = level
+            # 专题统计还需要等待日期输入元素呈现
+            if self.current_t1_css:
+                self._wait_for_visibility(self.current_t1_css)
+
 
     def set_t1_value(self, t1):
         """更改查询t1值"""
@@ -180,13 +184,12 @@ class ThematicStatistics(SZXPage):
     @property
     def is_available(self):
         """
-        故障概率低
+        故障概率低，返回True
         """
         return True
 
     def _wait_for_preview(self):
         """等待预览结果完全呈现"""
-        # 加载完成标准不一致
+        # 与数据搜索有差异
         css = '#contentTable'
-        self._wait_for_all_presence(css)
-        self.driver.implicitly_wait(0.3)
+        self._wait_for_visibility(css)

@@ -119,6 +119,7 @@ class SZXPage(object):
 
         # 恢复变量默认值
         self.code_loaded = False
+        self.current_level = ''
         self.current_t1_value = ''      # 开始日期
         self.current_t2_value = ''      # 结束日期
 
@@ -164,13 +165,13 @@ class SZXPage(object):
 
     def _wait_for_preview(self, style='display: none;'):
         """等待预览结果完全呈现"""
-        # # 以属性值改变来判断
-        # locator = (By.CSS_SELECTOR, self.wait_for_preview_css)
-        # self.wait.until(element_attribute_change_to(
-        #     locator, 'style', style), f'{self.api_name} 等待预览结果超时')
-        # 以加载指示元素不可见来判断
-        self._wait_for_invisibility(
-            self.wait_for_preview_css, f'{self.api_name} 等待预览结果超时')
+        # 以属性值改变来判断
+        locator = (By.CSS_SELECTOR, self.wait_for_preview_css)
+        self.wait.until(element_attribute_change_to(
+            locator, 'style', style), f'{self.api_name} 等待预览结果超时')
+        # # 以加载指示元素不可见来判断
+        # self._wait_for_invisibility(
+        #     self.wait_for_preview_css, f'{self.api_name} 等待预览结果超时')
 
     def _wait_for_invisibility(self, elem_css, msg=''):
         """
@@ -335,7 +336,7 @@ class SZXPage(object):
         """读取当前网页数据表"""
         # 点击`预览数据`
         if self.api_e_name == 'thematicStatistics':
-            # 专题统计中，12开头的数据项目无命令按钮
+            # 专题统计中，部分项目无命令按钮
             if any(self.css_map[self.current_level]):
                 # 预览数据
                 self.driver.find_element_by_css_selector(

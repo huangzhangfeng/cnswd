@@ -77,14 +77,14 @@ def create(db_dir_name, rewrite):
 def db_data():
     """刷新专题统计"""
     r = DBRefresher()
-    r.run()
+    r()
 
 # ====================数据搜索数据库==================== #
 @stock.command()
 def ts_data():
     """刷新数据搜索"""
     r = TSRefresher()
-    r.run()
+    r()
 
 
 @stock.command()
