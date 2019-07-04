@@ -91,9 +91,9 @@ def ts_data():
 def db_classify():
     """刷新股票分类信息"""
     update_classify_bom()
-    run = TryToCompleted(update_stock_classify, range(
-        1, 7), (before_update_stock_classify,))
-    run()
+    before_update_stock_classify()
+    for i in range(1, 7):
+        update_stock_classify(i)
 
 
 # ====================INFO数据库==================== #

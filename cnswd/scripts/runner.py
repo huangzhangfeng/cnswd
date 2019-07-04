@@ -1,3 +1,4 @@
+# 废弃
 import math
 import os
 import time
@@ -6,10 +7,10 @@ from selenium.common.exceptions import TimeoutException
 from cnswd.websource.exceptions import RetryException
 import logbook
 
-# 并行数量太大，反而会有冲突? 暂定2个观察 单一一个
+
 max_worker = 1 # max(1, int(os.cpu_count()/2))
 logger = logbook.Logger('runner')
-# TODO:运行记录
+
 
 class TryToCompleted(object):
     """多进程多次尝试直至完成任务"""
