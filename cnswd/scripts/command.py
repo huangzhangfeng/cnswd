@@ -13,7 +13,6 @@ $ stock db-refresh
 from __future__ import absolute_import, division, print_function
 
 import asyncio
-from functools import partial
 import click
 import logbook
 import pandas as pd
@@ -36,7 +35,6 @@ from .cninfo.refresher import DBRefresher, TSRefresher
 from .cninfo.core import update_classify_bom, update_stock_classify, before_update_stock_classify
 
 from .utils import create_tables, remove_temp_files, kill_firefox
-from .runner import TryToCompleted
 
 
 logbook.set_datetime_format('local')
@@ -70,8 +68,9 @@ def create(db_dir_name, rewrite):
     else:
         create_tables(db_dir_name, False)
 
-
-# ====================专题统计数据库==================== #
+# ######################################################
+# ##                                              专题统计                                         ##
+# ######################################################
 
 @stock.command()
 def db_data():
@@ -79,7 +78,10 @@ def db_data():
     r = DBRefresher()
     r()
 
-# ====================数据搜索数据库==================== #
+# ######################################################
+# ##                                              数据搜索                                         ##
+# ######################################################
+
 @stock.command()
 def ts_data():
     """刷新数据搜索"""
@@ -96,8 +98,10 @@ def db_classify():
         update_stock_classify(i)
 
 
-# ====================INFO数据库==================== #
 
+# ######################################################
+# ##                                              财经消息                                         ##
+# ######################################################
 
 @stock.command()
 @click.option('--times', default=10000, help='翻页次数')
@@ -125,8 +129,9 @@ def info_disclosure():
     asyncio.run(main())
 
 
-# ====================SZSH数据库==================== #
-
+# ######################################################
+# ##                                                 SZSH                                           ##
+# ######################################################
 
 @stock.command()
 def szsh_stock_info():
@@ -208,7 +213,10 @@ def szsh_main_index_daily():
     """刷新主要指数日线数据"""
     flush_index_daily()
 
-# ====================定期清理==================== #
+# ######################################################
+# ##                                              定期清理                                         ##
+# ######################################################
+
 @stock.command()
 def clean_up():
     """每天清理可能残余的firefox，注意避免与日常任务时间重叠
