@@ -3,7 +3,6 @@ import time
 import sys
 import numpy as np
 import pandas as pd
-from pandas.tseries.offsets import BDay, QuarterBegin, YearBegin
 
 from cnswd.websource.exceptions import RetryException
 from cnswd.utils import data_root, loop_period_by
