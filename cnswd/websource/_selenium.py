@@ -23,7 +23,7 @@ from ..utils import data_root
 
 
 LOG_PATH = os.path.join(data_root('geckordriver'), f'{os.getpid()}.log')
-EXEC_PATH = os.path.join(data_root('tools'), 'geckodriver.exe')
+# EXEC_PATH = os.path.join(data_root('tools'), 'geckodriver.exe')
 
 
 def make_headless_browser():
@@ -32,7 +32,7 @@ def make_headless_browser():
     options.headless = True
     # # 禁用gpu加速
     # options.add_argument('--disable-gpu')
-    return webdriver.Firefox(options=options, service_log_path=LOG_PATH, timeout=10, executable_path=EXEC_PATH)
+    return webdriver.Firefox(options=options, service_log_path=LOG_PATH, timeout=10)
 
 
 def make_headless_browser_with_auto_save_path(download_path, content_type):
@@ -44,4 +44,4 @@ def make_headless_browser_with_auto_save_path(download_path, content_type):
     fp.set_preference("browser.download.manager.showWhenStarting", False)
     fp.set_preference("browser.download.dir", download_path)
     fp.set_preference("browser.helperApps.neverAsk.saveToDisk", content_type)
-    return webdriver.Firefox(options=options, firefox_profile=fp, service_log_path=LOG_PATH, timeout=10, executable_path=EXEC_PATH)
+    return webdriver.Firefox(options=options, firefox_profile=fp, service_log_path=LOG_PATH, timeout=10)

@@ -223,6 +223,7 @@ class Refresher(object):
                         status['完成状态'] = '异常'
                         status['备注'] = f"{e}"
                         time.sleep(np.random.random())
+                        # api.logger.warning(f"{level} \n {e}")
                         # api.reset()
                     finally:
                         status['尝试次数'] = i+1
