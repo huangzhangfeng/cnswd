@@ -25,6 +25,7 @@ from ..utils import data_root
 LOG_PATH = os.path.join(data_root('geckordriver'), f'{os.getpid()}.log')
 EXEC_PATH = os.path.join(data_root('tools'), 'geckodriver.exe')
 
+
 def make_headless_browser():
     """无头浏览器"""
     options = Options()
