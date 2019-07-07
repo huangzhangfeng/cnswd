@@ -210,6 +210,7 @@ class Refresher(object):
                     try:
                         self._loop_by_level(api, level, freq)
                         status['完成状态'] = '完成'
+                        status['备注'] = ''
                     except Exception as e:
                         if not api.is_available:
                             sys.exit(0)
