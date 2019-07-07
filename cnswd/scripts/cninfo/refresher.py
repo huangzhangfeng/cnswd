@@ -216,7 +216,7 @@ class Refresher(object):
                         status['完成状态'] = '异常'
                         status['备注'] = f"{e}"
                         time.sleep(np.random.random())
-                        # api.reset()
+                        api.logger.error(e)
                     finally:
                         status['尝试次数'] = i+1
                         status['完成时间'] = pd.Timestamp('now')
