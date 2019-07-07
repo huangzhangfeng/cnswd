@@ -348,6 +348,8 @@ class SZXPage(object):
             # 预览数据
             self.driver.find_element_by_css_selector(
                 self.preview_btn_css).click()
+        # 数据加载与tip好像有延时
+        self.driver.implicitly_wait(0.3)
         # 等待预览数据完成加载。如数据量大，可能会比较耗时。最长约6秒。
         self._wait_for_preview()
         # 是否无数据返回
