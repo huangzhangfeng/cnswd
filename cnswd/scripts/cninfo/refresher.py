@@ -210,20 +210,12 @@ class Refresher(object):
                     try:
                         self._loop_by_level(api, level, freq)
                         status['完成状态'] = '完成'
-                    except RetryException as e:
-                        # TODO:观察
-                        # 直接退出?或者长时间休眠?
+                    except Exception as e:
                         if not api.is_available:
                             sys.exit(0)
-                        status['完成状态'] = '重试'
-                        status['备注'] = f"{e}"
-                        time.sleep(np.random.random())
-                        # api.reset()
-                    except Exception as e:
                         status['完成状态'] = '异常'
                         status['备注'] = f"{e}"
                         time.sleep(np.random.random())
-                        # api.logger.warning(f"{level} \n {e}")
                         # api.reset()
                     finally:
                         status['尝试次数'] = i+1

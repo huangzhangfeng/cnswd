@@ -253,11 +253,16 @@ class DataBrowse(SZXPage):
         如果此时状态异常，很容易丢失数据，导致数据不完整。须立即停止刷新。
         """
         level = '1.1'
-        self.select_level(level)
+        self._select_level(level)  # 使用`_select_level`方法
         self.load_all_code()
         span_css = 'div.select-box:nth-child(3) > div:nth-child(1) > span:nth-child(2)'
         expected = self._get_count_tip(span_css)
-        # 可以选择单一字段，加快检查状态速度
+        # 选择单一字段，加快检查状态速度
+        field_css = 'div.select-box:nth-child(2) > div:nth-child(3) > ul:nth-child(1) > li:nth-child(1) > label:nth-child(1) > span:nth-child(3)'
+        self.driver.find_element_by_css_selector(field_css).click()
+        add_btn_css = 'div.arrows-box:nth-child(3) > div:nth-child(1) > button:nth-child(1)'
+        self.driver.find_element_by_css_selector(add_btn_css).click()
+        # 预览数据
         self.driver.find_element_by_css_selector(self.preview_btn_css).click()
         self._wait_for_preview()
         actual = self._get_row_num()
