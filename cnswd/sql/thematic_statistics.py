@@ -403,8 +403,8 @@ class SuspensionAndResumption(Base):
     证券代码 = Column(Text, nullable=False, index=True)
     证券简称 = Column(Text)
     证券类别 = Column(Text)
-    停牌时间 = Column(DateTime, nullable=False, index=True)
-    复牌时间 = Column(DateTime, nullable=False, index=True)
+    停牌时间 = Column(DateTime, index=True)
+    复牌时间 = Column(DateTime, index=True)
     停牌期限 = Column(Text)
 
 
