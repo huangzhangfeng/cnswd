@@ -156,7 +156,7 @@ class ThematicStatistics(SZXPage):
             return self._read_html_table()
         label_css = css.split('>')[0] + ' > label:nth-child(1)'
         label = self.driver.find_element_by_css_selector(label_css)
-        if label.text in ('交易市场',):
+        if label.text in ('交易市场','控制类型'):
             return self._read_all_option(css)
         else:
             return self._read_one_by_one(css)

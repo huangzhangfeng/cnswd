@@ -138,7 +138,7 @@ TS_NAME = {
     '3.6':      '股本情况',
     # '3.7':      '高管持股变动明细',
     # '3.8':      '高管持股变动汇总',
-    '3.9':      '实际控制人持股变动',
+    # '3.9':      '实际控制人持股变动',
     '3.10':     '股东人数及持股集中度',
     # 4 业绩与分红
     '4.1':      '业绩预告',
@@ -200,7 +200,7 @@ TS_CSS = {
     '3.6':      (None, None, '.condition6 > select:nth-child(2)'), # 全部
     '3.7':      ('#dBDatepair > input:nth-child(1)', 'input.form-control:nth-child(2)', '.condition6 > select:nth-child(2)'), # 逐项
     '3.8':      ('#dBDatepair > input:nth-child(1)', 'input.form-control:nth-child(2)', '.condition6 > select:nth-child(2)'), # 逐项
-    '3.9':      (None, None, '.condition6 > select:nth-child(2)'), # 全部
+    # '3.9':      (None, None, '.condition6 > select:nth-child(2)'), # 全部
     '3.10':     ('#seee1_sele', '.condition2 > select:nth-child(2)', None),
     # 4 业绩与分红
     '4.1':      ('#seee1_sele', '.condition2 > select:nth-child(2)', None),
@@ -266,7 +266,7 @@ TS_DATE_FREQ = {
     '3.6':      (None, None),
     # '3.7':      ('截止日期',False), # 网上API查询逻辑存在错误
     # '3.8':      ('截止日期',False), # 网上API查询逻辑存在错误
-    '3.9':      (None, None),
+    # '3.9':      (None, None),
     '3.10':     ('QQ', True),
     # 4 业绩与分红
     '4.1':      ('QQ', True),
