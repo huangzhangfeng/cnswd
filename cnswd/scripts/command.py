@@ -68,20 +68,14 @@ def create(db_dir_name, rewrite):
     else:
         create_tables(db_dir_name, False)
 
-# ######################################################
-# ##                  专题统计                         ##
-# ######################################################
 
+# region 深证信
 
 @stock.command()
 def db_data():
     """刷新专题统计"""
     r = DBRefresher()
     r()
-
-# ######################################################
-# ##                 数据搜索                         ##
-# ######################################################
 
 
 @stock.command()
@@ -99,11 +93,10 @@ def db_classify():
     for i in range(1, 7):
         update_stock_classify(i)
 
+# endregion
 
-# ######################################################
-# ##                       财经消息                    ##
-# ######################################################
 
+# region 财经消息
 @stock.command()
 @click.option('--times', default=10000, help='翻页次数')
 def info_news_init(times):
@@ -129,11 +122,10 @@ def info_disclosure():
     async def main(): return await refresh_disclosure()
     asyncio.run(main())
 
+# endregion
 
-# ######################################################
-# ##                    SZSH                          ##
-# ######################################################
 
+# region SZSH
 @stock.command()
 def szsh_stock_info():
     """刷新上交所及深交所股票基本信息"""
@@ -214,11 +206,10 @@ def szsh_main_index_daily():
     """刷新主要指数日线数据"""
     flush_index_daily()
 
-# ######################################################
-# ##                  定期清理                         ##
-# ######################################################
+# endregion
 
 
+# region 定期清理
 @stock.command()
 def clean_up():
     """每天清理可能残余的firefox，注意避免与日常任务时间重叠
@@ -226,3 +217,5 @@ def clean_up():
     """
     remove_temp_files()
     kill_firefox()
+
+# endregion
