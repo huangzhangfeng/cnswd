@@ -334,6 +334,5 @@ ASALocalRun/
 *.egg-info/
 # tasks
 regular_tasks/
-bats/
 passwords.*
 cnswd/tests/t.py
