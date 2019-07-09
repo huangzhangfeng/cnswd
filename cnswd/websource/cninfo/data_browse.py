@@ -304,16 +304,14 @@ class DataBrowse(SZXPage):
         items = []
         for r in roots:
             # 需要全部级别的分类编码名称
-            items.extend(r.find_elements_by_css_selector('span'))
-            items.extend(r.find_elements_by_css_selector('a'))
+            items.extend(r.find_elements_by_tag_name('span'))
+            items.extend(r.find_elements_by_tag_name('a'))
         data = []
         attrs = ('data-id', 'data-name')
         for item in items:
             data.append([item.get_attribute(name) for name in attrs])
-        # plate_type, _, _ = self._parse_classify_info(i+1)
         df = pd.DataFrame.from_records(data, columns=['分类编码', '分类名称'])
-        # 不清楚为何存在重复值
-        return df.drop_duplicates(['分类编码', '分类名称'])
+        return df.dropna().drop_duplicates(['分类编码', '分类名称'])
 
     def _construct_css(self, level):
         nums = level.split('.')
