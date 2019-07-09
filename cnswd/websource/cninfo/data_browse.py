@@ -303,6 +303,8 @@ class DataBrowse(SZXPage):
             '.classify-tree > li')
         items = []
         for r in roots:
+            # 需要全部级别的分类编码名称
+            items.extend(r.find_elements_by_css_selector('span'))
             items.extend(r.find_elements_by_css_selector('a'))
         data = []
         attrs = ('data-id', 'data-name')
@@ -334,7 +336,7 @@ class DataBrowse(SZXPage):
     def _get_classify_tree(self, level):
         """获取层级股票列表"""
         df = None
-        self.logger.info(f'选中项目层级：{level}')
+        self.logger.info(f'选中分类层级：{level}')
         cum_level = []
         span_css = 'div.select-box:nth-child(1) > div:nth-child(3) > ul:nth-child(1) span'
         for l in level.split('.'):
