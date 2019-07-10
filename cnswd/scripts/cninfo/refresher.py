@@ -197,6 +197,8 @@ class Refresher(object):
 
     def __call__(self):
         with self.api_class(True) as api:
+            if not api.is_available:
+                sys.exit(0)            
             for level in self.level_name.keys():
                 freq = self.get_freq(level)
                 index = f"{self.api_class.__name__}{level}"
@@ -212,8 +214,6 @@ class Refresher(object):
                         status['完成状态'] = '完成'
                         status['备注'] = ''
                     except Exception as e:
-                        if not api.is_available:
-                            sys.exit(0)
                         status['完成状态'] = '异常'
                         status['备注'] = f"{e}"
                         time.sleep(np.random.random())
