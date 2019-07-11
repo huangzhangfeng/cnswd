@@ -1,4 +1,4 @@
-TIMEOUT = 15             # 标准等待时间，单位：秒
+TIMEOUT = 20             # 标准等待时间，单位：秒
 # 轮询时间缩短
 POLL_FREQUENCY = 0.3
 
