@@ -18,15 +18,26 @@ logger = logbook.Logger('数据库')
 db_dir_name = 'szsh'
 
 
+def _fix(df, prefix='A'):
+    """修复上交所股本数据单位"""
+    df.rename(columns={f'{prefix}股总股本(万股)': f'{prefix}股总股本',
+                       f'{prefix}股流通股本(万股)': f'{prefix}股流通股本'}, inplace=True)
+    df[f'{prefix}股总股本'] = df[f'{prefix}股总股本'] * 10000
+    df[f'{prefix}股流通股本'] = df[f'{prefix}股流通股本'] * 10000
+    return df
+
+
 def stock_list(sse_api):
     """正常在市股票(深交所、上交所)"""
     szse = fetch_companys_info()
     a = sse_api.get_stock_list_a()
     a['公司代码'] = a['公司代码'].map(str)
     a['A股代码'] = a['A股代码'].map(str)
+    a = _fix(a)
     b = sse_api.get_stock_list_b()
     b['公司代码'] = b['公司代码'].map(str)
     b['B股代码'] = b['B股代码'].map(str)
+    b = _fix(b, 'B')
     b.drop('公司简称', axis=1, inplace=True)
     sse = a.set_index('公司代码').join(b.set_index('公司代码'), sort=True)
     sse.reset_index(inplace=True)
