@@ -198,7 +198,7 @@ class Refresher(object):
     def __call__(self):
         with self.api_class(True) as api:
             if not api.is_available:
-                sys.exit(0)            
+                sys.exit(1)            
             for level in self.level_name.keys():
                 freq = self.get_freq(level)
                 index = f"{self.api_class.__name__}{level}"
