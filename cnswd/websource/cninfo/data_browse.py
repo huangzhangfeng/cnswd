@@ -78,8 +78,7 @@ class DataBrowse(SZXPage):
         """全选股票代码"""
         if self.code_loaded:
             return
-        # 科创板上市后才能添加
-        markets = ['深市A', '深市B', '沪市A', '沪市B']  # , '科创板']
+        markets = ['深市A', '深市B', '沪市A', '沪市B', '科创板']
         market_cate_css = '.classify-tree > li:nth-child(6)'
         self._wait_for_visibility(market_cate_css)
         li = self.driver.find_element_by_css_selector(market_cate_css)
